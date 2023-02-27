@@ -57,7 +57,7 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
                 float * traindists = nullptr);
 
 
-void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, size_t nq, size_t nb, size_t k, size_t Dimension, size_t M = 32, size_t EfCons = 500);
+void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, size_t nq, size_t nb, size_t k, size_t Dimension, size_t M = 32, size_t EfCons = 50);
 
 //float sc_eval(idx_t * assign_id, idx_t * neighbor_id, size_t * cluster_size, size_t neighbor_size, size_t neighbor_test_size, size_t nb, size_t nc);
 
