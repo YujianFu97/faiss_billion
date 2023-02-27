@@ -16,7 +16,7 @@ int main(){
     time_t now = std::time(0); char * dt = ctime(&now);
     RecordFile << std::endl << std::endl << "Time: " << dt << std::endl;
     char hostname[100] = {0}; gethostname(hostname, sizeof(hostname));
-    
+
     RecordFile << "Server Node: " << hostname << std::endl;
     RecordFile << "nc: " << nc << " nt: " << nt << " TrainSize " << CTrainSize << " Nlevel: " << Nlevel << " Use Opt: " << UseOptimize << " Lambda: " << Lambda <<  " OptSize: " << OptSize << std::endl;
     }
@@ -33,6 +33,7 @@ int main(){
     std::cout << "Nlevel: " << Nlevel << " OptSize: " << OptSize << " Lambda: " <<Lambda << "\n";
     PathFolder = PathFolder + Dataset + "/PS_" + NCString_PS + "/";
     PrepareFolder((char *) PathFolder.c_str());
+    exit(0);
 
     uint32_t NC = Index->LearnCentroidsINI(CTrainSize, nq, UseOptimize, IniM, MaxM,  TargetRecall, MaxCandidateSize, K, MaxFailureTimes, CheckProp, LowerBound, CheckBatch, M_PQ, CodeBits, PQ_TrainSize_PS, M, EfConstruction, Nlevel, OptSize, Lambda, ngt, PathFolder, PathGt, PathBase, PathQuery, PathLearn, RecordFile);
     if (Recording){RecordFile << "Centroid Training Time: " << Trecorder.getTimeConsumption() / 1000000 << " nc Result: " << NC << std::endl;};
