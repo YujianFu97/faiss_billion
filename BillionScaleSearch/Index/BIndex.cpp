@@ -174,6 +174,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
     // 1. Initialize the centroids
     std::vector<float> TrainSet(Dimension * CenTrainSize);
+    std::cout << "Load the train vectors from: " << Path_learn << std::endl;
     SampleSet<DataType>(TrainSet.data(), Path_learn, CenTrainSize, nt, Dimension);
     Trecorder.print_record_time_usage(RecordFile, "Sampled subset for training");
 
