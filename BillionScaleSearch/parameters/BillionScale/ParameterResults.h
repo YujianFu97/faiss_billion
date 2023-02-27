@@ -8,7 +8,7 @@ const bool UseOPQ = false;
 const bool UsePS = false;
 
 //For construction 
-size_t CTrainSize = nt;
+size_t CTrainSize = nt/10;
 size_t nc = 1000000;
 size_t PQTrainSize = 100000; 
 size_t M_PQ = 8; 
@@ -73,7 +73,7 @@ const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query
 */
 
 // For SIFT1B
-const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_base.bvecs";
+const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_learn.bvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.bvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.bvecs";
