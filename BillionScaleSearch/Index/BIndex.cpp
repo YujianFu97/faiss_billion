@@ -23,9 +23,10 @@ void rand_perm (uint32_t *perm, size_t n, int64_t seed)
 
 template<typename T>
 void SampleSet(float * ResultData, std::string PathLearn, size_t LoadSize, size_t TotalSize, size_t Dimension){
-    std::ifstream TrainInput(PathLearn, std::ios::binary);
+    
 
     if (LoadSize == TotalSize){
+        std::ifstream TrainInput(PathLearn, std::ios::binary);
         readXvecFvec<T>(TrainInput, ResultData, Dimension, LoadSize, true, true);
     }
     else{
@@ -33,13 +34,16 @@ void SampleSet(float * ResultData, std::string PathLearn, size_t LoadSize, size_
         std::vector<uint32_t> RandomId(TotalSize); faiss::RandomGenerator RNG(RandomSeed);
 
         rand_perm(RandomId.data(), TotalSize, RandomSeed+1);
+#pragma omp parallel for
         for (size_t i = 0; i < LoadSize; i++){
+            std::ifstream TrainInput(PathLearn, std::ios::binary);
             std::vector<T> OriginData(Dimension);
             TrainInput.seekg(RandomId[i] * (Dimension * sizeof(T) + sizeof(uint32_t)) + sizeof(uint32_t), std::ios::beg);
             TrainInput.read((char *) OriginData.data(), Dimension * sizeof(T));
             for (size_t j = 0; j < Dimension; j++){
                 ResultData[i * Dimension + j] = 1.0 * OriginData[j];
             }
+            std::ifstream TrainInput(PathLearn, std::ios::binary);
         }
         std::cout << "Check the sampled vectors: \n";
         for (size_t i = 0; i < Dimension; i++){

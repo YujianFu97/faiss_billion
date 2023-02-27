@@ -8,7 +8,7 @@ const bool UseOPQ = false;
 const bool UsePS = false;
 
 //For construction 
-size_t CTrainSize = nt/10;
+size_t CTrainSize = nt;
 size_t nc = 1000000;
 size_t PQTrainSize = 100000; 
 size_t M_PQ = 8; 
