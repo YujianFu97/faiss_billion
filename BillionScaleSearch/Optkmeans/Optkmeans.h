@@ -12,6 +12,7 @@
 #include "../hnswlib/hnswalg.h"
 #include <omp.h>
 
+// Need to set this correctly when running million/billion scale datasets
 typedef float DataType;
 //typedef uint8_t DataType;
 

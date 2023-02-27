@@ -1196,7 +1196,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     std::vector<bool> QuantizeLabel(nc, false);
     std::vector<std::vector<uint8_t>> BaseCodeSubset(nc);
     std::vector<std::vector<float>> BaseRecoverNormSubset(nc);
-    
 
     std::vector<int64_t> ResultID(RecallK * nq, 0);
     std::vector<float> ResultDist(RecallK * nq, 0);
@@ -1269,7 +1268,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                             std::vector<float> BaseVector(Dimension);
                             BaseInput.seekg(BaseIds[ClusterLabel][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
 
-                            readXvecFvec<float>(BaseInput, BaseVector.data(), Dimension, 1);
+                            readXvecFvec<DataType>(BaseInput, BaseVector.data(), Dimension, 1);
                             std::vector<float> BaseResidual(Dimension);
                             std::vector<float> RecoverResidual(Dimension);
                             faiss::fvec_madd(Dimension, BaseVector.data(), -1.0,  CentroidHNSW->getDataByInternalId(ClusterLabel), BaseResidual.data());
@@ -1322,7 +1321,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                         std::vector<float> BaseVector(Dimension);
                         std::ifstream BaseInput(Path_base, std::ios::binary);
                         BaseInput.seekg(BaseIds[ClusterID][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)) + sizeof(uint32_t), std::ios::beg);
-                        BaseInput.read((char *) BaseVector.data(), Dimension * sizeof(float));
+                        BaseInput.read((char *) BaseVector.data(), Dimension * sizeof(DataType));
                         std::cout << "ID: " << BaseIds[ClusterID][j] << " ClusterID: " << ClusterID << "\n";
                         std::cout << "Correct QC Dist: " << faiss::fvec_L2sqr(QuerySet + QueryIdx * Dimension, CentroidHNSW->getDataByInternalId(ClusterID), Dimension) << " Result: " << QueryDist[QueryIdx * ClusterNum + i] << std::endl;
                         std::cout << "Correct CNorm: " << faiss::fvec_norm_L2sqr(CentroidHNSW->getDataByInternalId(ClusterID), Dimension) << " Result: " << CenNorms[ClusterID] << std::endl; 

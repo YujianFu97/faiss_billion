@@ -1,4 +1,4 @@
-#include "DEEP1B.h"
+#include "SIFT1B.h"
 
 //For recording
 const bool SavingIndex = true;
@@ -8,22 +8,22 @@ const bool UseOPQ = false;
 const bool UsePS = false;
 
 //For construction 
-size_t CTrainSize = 100000000;
-size_t nc = 10000000;
-size_t PQTrainSize = 1000000; 
-size_t M_PQ = 16; 
+size_t CTrainSize = nt;
+size_t nc = 1000000;
+size_t PQTrainSize = 100000; 
+size_t M_PQ = 8; 
 size_t CodeBits = 8; 
-size_t NBatches = 50; 
+size_t NBatches = 20; 
 size_t BatchSize = nb / NBatches; 
 std::string OPQState = UseOPQ ? "_OPQ_":"_";
 
 //For search
 const size_t NumRecall = 2;
-const size_t NumPara = 2;
+const size_t NumPara = 10;
 size_t RecallK[NumRecall] = {1, 10};
-size_t MaxItem[NumPara] = {10000, 10000};
-size_t EfSearch[NumPara] = {32, 64};
-size_t AccustopItem[NumPara] = {1000, 2000};
+size_t MaxItem[NumPara] = {100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000};
+size_t EfSearch[NumPara] = {10, 20, 30, 40, 50, 60, 70,80, 90, 100};
+size_t AccustopItem[NumPara] = {100000};
 
 // For optkmeans
 size_t Nlevel = 2;
@@ -37,14 +37,20 @@ size_t M = 32;
 size_t EfConstruction = 500;
 
 //For PS
-size_t IniM = 4000000;
-size_t MaxM = 10000000;
-size_t ClusterBoundSize = 100;
-size_t CheckBatch = 100000;
+size_t IniM = 1000000;
+size_t MaxM = 20000000;
+size_t ClusterBoundSize = 500;
+size_t CheckBatch = IniM / 10;
 size_t Verbose = true;
-float TargetRecall = 9.0;
+size_t PQ_TrainSize_PS = 50000; 
 size_t K = 10;
-std::string NCString_PS = std::to_string(size_t(Alpha)) + "_" + std::to_string(IniM) + "_" + std::to_string(MaxM) + "_" + std::to_string(CheckBatch) + "_" + std::to_string(BatchSize) + "_" + std::to_string(size_t(TargetRecall* 10)) + "_" + std::to_string(K);
+float TargetRecall = (0.36) * K; // Target number of gt visited in candidate list, this is related to the recall
+float MaxCandidateSize = 50000;    // Maximum candidate list size, note: this is the number of vectors in trainset, i.e. Trainsize * SubsetProp vectors
+size_t MaxFailureTimes = 5;
+float CheckProp = 0.005;
+size_t LowerBound = 20;
+
+std::string NCString_PS = std::to_string(IniM);
 std::string NCString    = std::to_string(nc);
 
 
@@ -58,17 +64,20 @@ float Beta = 0.3;
 
 // Data Path 
 
+// For DEEP1B
+/*
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_learn.fvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.fvecs";
+*/
 
-/*
+// For SIFT1B
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_base.bvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.bvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.bvecs";
-*/
+
 
 const std::string PathTrainGt =   PathFolder  + Dataset + "/" + Dataset +"_Train_groundtruth.ivecs";
 const std::string PathTrainDist = PathFolder  + Dataset + "/" + Dataset +"_Train_Dist.fvecs";

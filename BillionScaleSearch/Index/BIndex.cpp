@@ -278,7 +278,7 @@ uint32_t BIndex::LearnCentroidsINI(
     std::vector<uint32_t> QueryGT(nq * ngt);
     readXvec<uint32_t> (GTInput, QueryGT.data(), ngt, nq, true, true);
     std::vector<float>  QuerySet(nq * Dimension);
-    readXvecFvec<float>(QueryInput, QuerySet.data(), Dimension, nq, true, true);
+    readXvecFvec<DataType>(QueryInput, QuerySet.data(), Dimension, nq, true, true);
     QueryInput.close(); GTInput.close();
     Trecorder.print_record_time_usage(RecordFile, "Load the queries and groundtruth");
 
@@ -516,15 +516,14 @@ uint32_t BIndex::LearnCentroidsINI(
     CenNormInput.read((char * ) CNorms.data(), nc * sizeof(float));
     CenNormInput.close();
 
+/*
     for (size_t i = 0; i < nc; i++){
-        if (faiss::fvec_norm_L2sqr(CentroidHNSW->getDataByInternalId(i), Dimension) != CNorms[i]){
-            for (size_t j = 0; j < Dimension; j++){
-                std::cout << CentroidHNSW->getDataByInternalId(i)[j] << " ";
-            }
-            std::cout << i << " " << (faiss::fvec_norm_L2sqr(CentroidHNSW->getDataByInternalId(i), Dimension)) << " " << CNorms[i] << "\n";
+        if (abs(faiss::fvec_norm_L2sqr(CentroidHNSW->getDataByInternalId(i), Dimension) - CNorms[i]) > 1e-5){
+            std::cout << "Centroid Norm Error: " << i << " th centroid: correct norm: " << (faiss::fvec_norm_L2sqr(CentroidHNSW->getDataByInternalId(i), Dimension)) << " recorded norm: " << CNorms[i]  << " Error: " << faiss::fvec_norm_L2sqr(CentroidHNSW->getDataByInternalId(i), Dimension) - CNorms[i] << "\n";
+            exit(0);
         }
     }
-
+*/
     // Load the PQ quantizer
     std::cout << "Load Product quantizer file from: " << OptString[9] << "\n";
     assert(exists(OptString[9]));
@@ -551,7 +550,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
     std::cout << "Save Base code file to: " << Path_base_code << " \nSave Base norm file to: " << Path_base_norm << "\n";
 
-    Retrain = true;
+    Retrain = false;
 
     QuantizeBaseset(Assignment_num_batch, Assignment_batch_size, Path_base, OptString[27], Path_base_code, Path_base_norm);
     return nc;

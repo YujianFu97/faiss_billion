@@ -1,5 +1,6 @@
 #include "./SIFT1M.h"
 
+
 //For recording
 const bool SavingIndex = true;
 const bool Recording = true;
@@ -29,7 +30,7 @@ size_t AccustopItem[NumPara] = {100000};
 // For optkmeans
 size_t Nlevel = 2;
 bool UseGraph = true;
-bool UseOptimize = false;
+bool UseOptimize = true;
 bool ConstrolStart = false;
 bool AddiFunction = true;
 
@@ -43,7 +44,7 @@ size_t MaxM = 100000;
 size_t ClusterBoundSize = 100;
 size_t CheckBatch = 1000;
 size_t Verbose = true;
-size_t PQ_TrainSize_PS = 10000;  // Ensure that nt * SubsetProp > PQ_TrainSize_PS
+size_t PQ_TrainSize_PS = 10000; 
 size_t K = 1;
 float TargetRecall = (0.36) * K; // Target number of gt visited in candidate list, this is related to the recall
 float MaxCandidateSize = 10000;    // Maximum candidate list size, note: this is the number of vectors in trainset, i.e. Trainsize * SubsetProp vectors
