@@ -43,7 +43,7 @@ void SampleSet(float * ResultData, std::string PathLearn, size_t LoadSize, size_
             for (size_t j = 0; j < Dimension; j++){
                 ResultData[i * Dimension + j] = 1.0 * OriginData[j];
             }
-            std::ifstream TrainInput(PathLearn, std::ios::binary);
+            TrainInput.close();
         }
         std::cout << "Check the sampled vectors: \n";
         for (size_t i = 0; i < Dimension; i++){
