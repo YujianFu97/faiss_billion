@@ -1,5 +1,5 @@
 #include "Index/BIndex.h"
-#include "parameters/MillionScale/ParameterResults.h"
+#include "parameters/BillionScale/ParameterResults.h"
 // Basic Theory
 
 int main(){
