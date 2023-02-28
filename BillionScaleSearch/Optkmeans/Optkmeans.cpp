@@ -657,7 +657,7 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
         printf("Update cluster nc for the last layer with time consumption %.2f s \n", Trecorder.get_time_usage());
 
         // Do local kmeans training in parallel
-        int nt = omp_get_max_threads() / 2;
+        int nt = omp_get_max_threads();
         // We do loop with the number of threads
         size_t StartIndice = 0;
         size_t EndIndice = StartIndice + (nt < nc_completed ? nt : nc_completed);

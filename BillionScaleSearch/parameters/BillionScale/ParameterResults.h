@@ -34,7 +34,7 @@ bool AddiFunction = true;
 
 //For HNSW graph
 size_t M = 32;
-size_t EfConstruction = 80;
+size_t EfConstruction = 40;
 
 //For PS
 size_t IniM = 1000000;

@@ -223,7 +223,7 @@ uint32_t BIndex::LearnCentroidsINI(
         std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(batch_idx + 1) + "_" + std::to_string(Assignment_num_batch) + ".ivecs";
         if (exists(Batch_ID_path)){continue;}
 
-        std::cout << "Assigning the " << Assignment_indice + batch_idx + 1 << " / " << Assignment_num_batch << " batch of the dataset and save ID to" << Batch_ID_path << "\n";
+        std::cout << "Assigning the " << Assignment_indice + batch_idx + 1 << " / " << Assignment_num_batch << " batch of the dataset and save ID to" << Batch_ID_path << " Time consumption: " << Trecorder.get_time_usage() << " s\n";
         BaseInput.seekg((Assignment_indice + batch_idx) * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
         std::vector<float> Base_batch(Assignment_batch_size * Dimension);
         readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
