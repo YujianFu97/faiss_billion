@@ -4,7 +4,7 @@
 
 int main(){
 
-    Retrain = true;
+    Retrain = false;
     bool TestSearch = true;
     bool TestPS = true;
     bool TestNonPS = false;
