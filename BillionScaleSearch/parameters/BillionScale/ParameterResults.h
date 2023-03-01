@@ -1,4 +1,4 @@
-#include "SIFT1B.h"
+#include "DEEP1B.h"
 
 //For recording
 const bool SavingIndex = true;
@@ -28,7 +28,7 @@ size_t AccustopItem[NumPara] = {100000};
 // For optkmeans
 size_t Nlevel = 2;
 bool UseGraph = true;
-bool UseOptimize = true;
+bool UseOptimize = false;
 bool ConstrolStart = false;
 bool AddiFunction = true;
 

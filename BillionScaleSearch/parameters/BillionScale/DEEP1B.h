@@ -9,13 +9,8 @@ const std::string PathFolder = "/home/yujian/Yujian/Dataset/";
 //const std::string PathFolder = "/home/y/yujianfu/Dataset/";
 
 const uint32_t ngt = 100;
-const size_t nq = 10000;
+const size_t nq = 1000;
 const size_t nt = 200000000;
-
-
-// For PS
-float Alpha = 400;
-
 
 // For OptKmeans
 float Lambda = 50;
