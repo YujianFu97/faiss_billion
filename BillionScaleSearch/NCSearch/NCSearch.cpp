@@ -1211,7 +1211,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     float MinimumCoef = 0.95;
     size_t MaxRepeatTimes = 3;
     while(!ValidResult){
-        size_t ClusterNum = size_t(nb / nc / 500);
+        size_t ClusterNum = size_t(MaxCandidateSize / (2 * (nb / nc)));
         size_t ClusterBatch = std::ceil(float(ClusterNum) / 10);
         std::vector<float> ClusterNumList;
         std::vector<float> CanLengthList;
@@ -1219,7 +1219,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         std::vector<float> VecSearchTime;
 
 
-        
+
         bool AchieveTargetRecall = true;
         bool UpdateClusterNum = true;
         bool IncreaseClusterNum = false;
