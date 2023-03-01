@@ -1467,7 +1467,7 @@ void BillionUpdateCost(
 
     // The proportion of checked vectors
     std::cout << "Update cluster search cost with Number of cluster visited: " << ClusterNum <<  " The clusterVectorCost with checkprop: " << CheckProp <<"\n";;
-
+/*
 #pragma omp parallel for
     for (size_t i = 0; i < NC; i++){
         std::ifstream BaseInput(Path_base, std::ios::binary);
@@ -1482,7 +1482,7 @@ void BillionUpdateCost(
             std::vector<uint32_t> VectorLabel(ClusterNum);
             std::vector<float> VectorDist(ClusterNum);
             uint32_t VectorID = BaseIds[i][RandomId[VectorIndice]];
-            
+
             std::vector<float> BaseVector(Dimension);
             BaseInput.seekg(VectorID * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
             readXvecFvec<DataType>(BaseInput, BaseVector.data(), Dimension, 1);
@@ -1500,6 +1500,19 @@ void BillionUpdateCost(
         }
         ClusterVectorCost[i] = CandidateListSize;
         BaseInput.close();
+    }
+*/
+#pragma omp parallel for
+    for (size_t i = 0; i < NC; i++){
+        std::vector<uint32_t> VectorLabel(ClusterNum);
+        std::vector<float> VectorDist(ClusterNum);
+
+        auto result = Graph->searchKnn(Graph->getDataByInternalId(i), ClusterNum);
+        size_t CandidateListSize = 0;
+        for(size_t j = 0; j < ClusterNum; j++){
+            CandidateListSize += BaseIds[i].size() * BaseIds[VectorLabel[j]].size();
+        }
+        ClusterVectorCost[i] = CandidateListSize;
     }
 }
 

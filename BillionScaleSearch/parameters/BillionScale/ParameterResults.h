@@ -47,8 +47,8 @@ size_t K = 10;
 float TargetRecall = (0.28) * K; // Target number of gt visited in candidate list, this is related to the recall
 float MaxCandidateSize = 50000;    // Maximum candidate list size, note: this is the number of vectors in trainset, i.e. Trainsize * SubsetProp vectors
 size_t MaxFailureTimes = 5;
-float CheckProp = 0.005;
-size_t LowerBound = 20;
+float CheckProp = 0.001;
+size_t LowerBound = 10;
 
 std::string NCString_PS = std::to_string(IniM);
 std::string NCString    = std::to_string(nc);
