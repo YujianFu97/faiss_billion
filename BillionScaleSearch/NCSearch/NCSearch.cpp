@@ -1259,7 +1259,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
 
                 for (size_t i = 0; i < ClusterNum; i++){
                     if (!QuantizeLabel[QueryLabel[QueryIdx * ClusterNum + i]]){
-                        NumLoadCluster ++
+                        NumLoadCluster ++;
                         uint32_t ClusterLabel = QueryLabel[QueryIdx * ClusterNum + i];
                         // The vectors are not quantized, read and quantize the base vectors
                         QuantizeLabel[ClusterLabel] = true;
