@@ -1251,20 +1251,24 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             TRecorder.recordTimeConsumption1();
             //std::cout << "1: \n";
 
+            size_t NumLoadCluster = 0;
             TRecorder.reset();
             // Load and quantize the vectors to be visited
             for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
                 // Do parallel for the search result of one query, as there will be no repeat
-#pragma omp parallel for
+
                 for (size_t i = 0; i < ClusterNum; i++){
                     if (!QuantizeLabel[QueryLabel[QueryIdx * ClusterNum + i]]){
+                        NumLoadCluster ++
                         uint32_t ClusterLabel = QueryLabel[QueryIdx * ClusterNum + i];
                         // The vectors are not quantized, read and quantize the base vectors
                         QuantizeLabel[ClusterLabel] = true;
                         BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
                         BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
-                        std::ifstream BaseInput(Path_base, std::ios::binary);
+
+#pragma omp parallel for
                         for (size_t j = 0; j < BaseIds[ClusterLabel].size(); j++){
+                            std::ifstream BaseInput(Path_base, std::ios::binary);
                             std::vector<float> BaseVector(Dimension);
                             BaseInput.seekg(BaseIds[ClusterLabel][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
 
@@ -1279,12 +1283,13 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                             BaseRecoverNormSubset[ClusterLabel][j] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
 
                             //std::cout << faiss::fvec_norm_L2sqr(BaseResidual.data(), Dimension) << " " << faiss::fvec_norm_L2sqr(RecoverResidual.data(), Dimension) << " " << faiss::fvec_L2sqr(BaseResidual.data(), RecoverResidual.data(), Dimension) << " | "; 
+                            BaseInput.close();
                         }
-                        BaseInput.close();
+                        
                     }
                 }
             }
-            TRecorder.print_time_usage("Load and quantize the base vectors");
+            TRecorder.print_time_usage("Load and quantize the base vectors in |" + std::to_string(NumLoadCluster) + "| clusters ");
 
             //std::cout << "2: \n";
 
@@ -1375,8 +1380,8 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                     }
                 }
             }
-            std::cout << "'Numcluster: " << ClusterNum << " Cluster Batch: " << ClusterBatch << " Visited num of GT in top " << RecallK << " NN: " << (VisitedGt) / nq << " Candidate List Size: " << (VisitedVec) / nq  <<  " Target recall: "<< TargetRecall  << " Search Time: " << (TRecorder.TempDuration1 + TRecorder.TempDuration2 + TRecorder.TempDuration3) / (nq * 1000) <<  " Cen Search Time: " <<  TRecorder.TempDuration1 / (nq * 1000)  << " Table time: " <<  TRecorder.TempDuration2 / (nq * 1000) << " Vec Search Time: " << TRecorder.TempDuration3 / (nq * 1000)  << " with repeat times: " << RepeatTimes << " / " << MaxRepeatTimes << "',\n";
-            RecordFile << "'Numcluster: " << ClusterNum << " Cluster Batch: " << ClusterBatch << " Visited num of GT in top " << RecallK << " NN: " << (VisitedGt) / nq << " Candidate List Size: " << (VisitedVec) / nq <<  " Target recall: "<< TargetRecall  << " Search Time: " << (TRecorder.TempDuration1 + TRecorder.TempDuration2 + TRecorder.TempDuration3) / (nq * 1000) << " Cen Search Time: " <<  TRecorder.TempDuration1 / (nq * 1000) << " Table time: " <<  TRecorder.TempDuration2 / (nq * 1000) << " Vec Search Time: " << TRecorder.TempDuration3 / (nq * 1000)  << " with repeat times: " << RepeatTimes << " / " << MaxRepeatTimes << "',\n";
+            std::cout << "'Numcluster: " << ClusterNum << " Cluster Batch: " << ClusterBatch << " Visited num of GT in top " << RecallK << " NN: " << (VisitedGt) / nq << " Candidate List Size: " << (VisitedVec) / nq  << " / " << MaxCandidateSize <<  " Target recall: "<< TargetRecall  << " Search Time: " << (TRecorder.TempDuration1 + TRecorder.TempDuration2 + TRecorder.TempDuration3) / (nq * 1000) <<  " Cen Search Time: " <<  TRecorder.TempDuration1 / (nq * 1000)  << " Table time: " <<  TRecorder.TempDuration2 / (nq * 1000) << " Vec Search Time: " << TRecorder.TempDuration3 / (nq * 1000)  << " with repeat times: " << RepeatTimes << " / " << MaxRepeatTimes << "',\n";
+            RecordFile << "'Numcluster: " << ClusterNum << " Cluster Batch: " << ClusterBatch << " Visited num of GT in top " << RecallK << " NN: " << (VisitedGt) / nq << " Candidate List Size: " << (VisitedVec) / nq <<  " / " << MaxCandidateSize << " Target recall: "<< TargetRecall  << " Search Time: " << (TRecorder.TempDuration1 + TRecorder.TempDuration2 + TRecorder.TempDuration3) / (nq * 1000) << " Cen Search Time: " <<  TRecorder.TempDuration1 / (nq * 1000) << " Table time: " <<  TRecorder.TempDuration2 / (nq * 1000) << " Vec Search Time: " << TRecorder.TempDuration3 / (nq * 1000)  << " with repeat times: " << RepeatTimes << " / " << MaxRepeatTimes << "',\n";
 
             //std::cout << "6: \n";
             ClusterNumList.emplace_back(ClusterNum); CanLengthList.emplace_back((VisitedVec) / nq); CenSearchTime.emplace_back(TRecorder.TempDuration1 / (nq * 1000)); VecSearchTime.emplace_back(TRecorder.TempDuration3 / (nq * 1000));
