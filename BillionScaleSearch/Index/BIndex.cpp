@@ -164,6 +164,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
     size_t OptNC = 0;
     nc = MinNC;
+    std::vector<uint32_t> Base_ID_seq(nb);
     std::string Path_centroid = Path_folder + "Centroids_" + std::to_string(nc) + ".fvecs";
     uint32_t Assignment_num_batch = 20; assert(nb % Assignment_num_batch == 0);
     uint32_t Assignment_batch_size = nb / Assignment_num_batch;
@@ -246,7 +247,7 @@ uint32_t BIndex::LearnCentroidsINI(
         std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(i + 1) + "_" + std::to_string(Assignment_num) + ".ivecs";
         if(!exists(Batch_ID_path)){std::cout << "Base vector ID file " << Batch_ID_path << " not exists, cannot continue the training process\n"; exit(0);}
     }
-    std::vector<uint32_t> Base_ID_seq(nb);
+
     for (uint32_t i = 0; i < Assignment_num_batch; i++){
         std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(i + 1) + "_" + std::to_string(Assignment_num) + ".ivecs";
         std::ifstream Batch_ID_input(Batch_ID_path, std::ios::binary);
@@ -261,20 +262,12 @@ uint32_t BIndex::LearnCentroidsINI(
     }
 
     std::string Path_ID_seq = Path_folder + "BaseID_" + std::to_string(nc) + ".seq"; 
-    std::string Path_ID_inv = Path_folder + "BaseID_" + std::to_string(nc) + ".inv"; 
-
-    std::ofstream BaseIDInvOutput(Path_ID_inv, std::ios::binary);
-    for (size_t i = 0; i < nc; i++){
-        uint32_t ClusterSize = BaseIds[i].size();
-        BaseIDInvOutput.write((char *) & ClusterSize, sizeof(uint32_t));
-        BaseIDInvOutput.write((char *) BaseIds[i].data(), ClusterSize * sizeof(uint32_t));
+    if (!exists(Path_ID_seq)){
+        std::ofstream BaseIDSeqOutput(Path_ID_seq, std::ios::binary);
+        BaseIDSeqOutput.write((char * ) Base_ID_seq.data(), nb * sizeof(uint32_t));
+        BaseIDSeqOutput.close();
+        std::cout << "Save vector ID in seq index to " << Path_ID_seq << "\n";
     }
-    BaseIDInvOutput.close();
-    std::cout << "Save vector ID in inverted index to " << Path_ID_inv << "\n";
-    std::ofstream BaseIDSeqOutput(Path_ID_seq, std::ios::binary);
-    BaseIDSeqOutput.write((char * ) Base_ID_seq.data(), nb * sizeof(uint32_t));
-    BaseIDSeqOutput.close();
-    std::cout << "Save vector ID in seq index to " << Path_ID_seq << "\n";
     Trecorder.print_record_time_usage(RecordFile, "Load base ID to index and merge the ID");
 
     // 4. Load the query and groundtruth of the queries on baseset for recall check
@@ -386,7 +379,7 @@ uint32_t BIndex::LearnCentroidsINI(
         // This iteration offers new optimal centroids
         if (std::get<0>(RecallResult) && PerTime < OptPerTime){
             OptOutput << "New opt NC: " << nc << " Centroid Path: " << Path_centroid << " PQ Path: " << Path_PQ << " Centroid Norm Path: " << Path_cen_norm << 
-            " Graph edge path: " << Path_Graph_Edge << " Graph info path: " << Path_Graph_info << " Path ID_inv: " << Path_ID_inv << " Path ID_seq: " << Path_ID_seq <<
+            " Graph edge path: " << Path_Graph_Edge << " Graph info path: " << Path_Graph_info << " Path ID_seq: " << Path_ID_seq <<
              " Search Time: " << PerTime << " Target Recall: " << TargetRecall << "\n";
             OptOutput.close();
             OptOutput.open(Path_opt_file, std::ios::app);
@@ -400,7 +393,7 @@ uint32_t BIndex::LearnCentroidsINI(
         //  This iteration cannot achieve the target recall
         else if(! std::get<0>(RecallResult)){
             OptOutput << "New opt NC: " << nc << " Centroid Path: " << Path_centroid << " PQ Path: " << Path_PQ << " Centroid Norm Path: " << Path_cen_norm << 
-            " Graph edge path: " << Path_Graph_Edge << " Graph info path: " << Path_Graph_info << " Path ID_inv: " << Path_ID_inv << " Path ID_seq: " << Path_ID_seq <<
+            " Graph edge path: " << Path_Graph_Edge << " Graph info path: " << Path_Graph_info << " Path ID_seq: " << Path_ID_seq <<
              " Search Time: " << PerTime << " Target Recall: " << TargetRecall << "\n";
             OptOutput.close();
             OptOutput.open(Path_opt_file, std::ios::app);
@@ -458,19 +451,9 @@ uint32_t BIndex::LearnCentroidsINI(
             BillionUpdateCentroids(Dimension, NCBatch, SumClusterCost / nc, Optimize, Lambda, OptSize, nc, ClusterCostBatch.data(), ClusterIDBatch.data(), Centroids.data(), Base_ID_seq.data(), Path_base, BaseIds);
             Trecorder.print_record_time_usage(RecordFile, "Split the clusters and update the vector IDs");
 
-            Path_ID_seq = Path_folder_recall + "BaseID_" + std::to_string(nc) + ".seq"; 
-            Path_ID_inv = Path_folder_recall + "BaseID_" + std::to_string(nc) + ".inv"; 
             // Save the base set ID
-
-            BaseIDInvOutput.open(Path_ID_inv, std::ios::binary);
-            for (size_t i = 0; i < nc; i++){
-                uint32_t ClusterSize = BaseIds[i].size();
-                BaseIDInvOutput.write((char *) & ClusterSize, sizeof(uint32_t));
-                BaseIDInvOutput.write((char *) BaseIds[i].data(), ClusterSize * sizeof(uint32_t));
-            }
-            BaseIDInvOutput.close();
-            std::cout << "Save vector ID in inverted index to " << Path_ID_inv << "\n";
-            BaseIDSeqOutput.open(Path_ID_seq, std::ios::binary);
+            Path_ID_seq = Path_folder_recall + "BaseID_" + std::to_string(nc) + ".seq"; 
+            std::ofstream BaseIDSeqOutput(Path_ID_seq, std::ios::binary);
             BaseIDSeqOutput.write((char * ) Base_ID_seq.data(), nb * sizeof(uint32_t));
             BaseIDSeqOutput.close();
             std::cout << "Save vector ID in seq index to " << Path_ID_seq << "\n";
@@ -540,22 +523,21 @@ uint32_t BIndex::LearnCentroidsINI(
     assert(exists(OptString[9]));
     PQ = faiss::read_ProductQuantizer(OptString[9].c_str());
 
-    // Load the inverted base ID
-    std::cout << "Load Base ID in inverted index from: " << OptString[24] << "\n";
+    // Load the base ID and transfer to inverted index
+    std::cout << "Load Base ID in sequence from: " << OptString[24] << "\n";
     assert(exists(OptString[24]));
     std::ifstream BaseIDInput(OptString[24], std::ios::binary);
-    BaseIds.resize(nc);
+    BaseIds.resize(nc); for (size_t i = 0; i < nc; i++){BaseIds.resize(0);}
     uint32_t ClusterSize;
-    for (size_t i = 0; i < nc; i++){
-        BaseIDInput.read((char *) & ClusterSize, sizeof(uint32_t));
-        BaseIds[i].resize(ClusterSize);
-        BaseIDInput.read((char *) BaseIds[i].data(), ClusterSize * sizeof(uint32_t));
-    }
+
+    BaseIDInput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
     BaseIDInput.close();
+    for (uint32_t i = 0; i < nb; i++){
+        BaseIds[Base_ID_seq[i]].emplace_back(i);
+    }
 
     // Quantize the base vectors to vector code and save tthe code to index
-    std::cout << "Load Base ID in seq index from: " << OptString[27] << "\n";
-    assert(exists(OptString[27]));
+
     std::string Path_base_code = Path_folder_recall + "Base_code_" + std::to_string(nc) + "_" + std::to_string(PQ_M) +  ".code";
     std::string Path_base_norm = Path_folder_recall + "Base_" + std::to_string(nc) + "_" + std::to_string(PQ_M) +  ".norm";
 
@@ -563,7 +545,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
     Retrain = false;
 
-    QuantizeBaseset(Assignment_num_batch, Assignment_batch_size, Path_base, OptString[27], Path_base_code, Path_base_norm);
+    QuantizeBaseset(Assignment_num_batch, Assignment_batch_size, Path_base, OptString[24], Path_base_code, Path_base_norm);
     return nc;
 }
 
