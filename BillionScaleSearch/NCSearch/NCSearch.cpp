@@ -1463,13 +1463,13 @@ void BillionUpdateCost(
     std::string Path_base,
     std::vector<std::vector<uint32_t>> & BaseIds, hnswlib::HierarchicalNSW * Graph
 ){
-    long RandomSeed = 1234;
 
-    // The proportion of checked vectors
-    std::cout << "Update cluster search cost with Number of cluster visited: " << ClusterNum <<  " The clusterVectorCost with checkprop: " << CheckProp <<"\n";;
 /*
+    // The proportion of checked vectors
+    std::cout << "Update cluster search cost with Number of cluster visited: " << ClusterNum <<  " The clusterVectorCost with checkprop: " << CheckProp <<"\n";
 #pragma omp parallel for
     for (size_t i = 0; i < NC; i++){
+        long RandomSeed = 1234;
         std::ifstream BaseInput(Path_base, std::ios::binary);
 
         size_t ClusterSize = BaseIds[i].size();
@@ -1502,6 +1502,7 @@ void BillionUpdateCost(
         BaseInput.close();
     }
 */
+    std::cout << "Update cluster search cost based on centroids with Number of cluster visited: " << ClusterNum << "\n";
 #pragma omp parallel for
     for (size_t i = 0; i < NC; i++){
         std::vector<uint32_t> VectorLabel(ClusterNum);
