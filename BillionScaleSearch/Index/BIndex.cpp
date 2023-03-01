@@ -528,7 +528,6 @@ uint32_t BIndex::LearnCentroidsINI(
     assert(exists(OptString[24]));
     std::ifstream BaseIDInput(OptString[24], std::ios::binary);
     BaseIds.resize(nc); for (size_t i = 0; i < nc; i++){BaseIds.resize(0);}
-    uint32_t ClusterSize;
 
     BaseIDInput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
     BaseIDInput.close();
