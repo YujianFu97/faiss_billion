@@ -312,6 +312,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
         std::string Path_cen_norm = Path_folder_recall + "Centroids_" + std::to_string(nc)+".norm";
 
+/*
         if (!Retrain && exists(Path_cen_norm)){
             std::ifstream CenNormInput(Path_cen_norm, std::ios::binary);
             size_t nc_r;
@@ -321,19 +322,22 @@ uint32_t BIndex::LearnCentroidsINI(
             CenNormInput.close();
         }
         else{
+*/
             std::ofstream CenNormOutput(Path_cen_norm, std::ios::binary);
             faiss::fvec_norms_L2sqr(CNorms.data(), Centroids.data(), Dimension, nc);
             CenNormOutput.write((char * ) & nc, sizeof(size_t));
             CenNormOutput.write((char * ) CNorms.data(), nc * sizeof(float));
             CenNormOutput.close();
-        }
+ //       }
 
         // 1.2. Build PQ quantizer with the constructed centroids and the a subset of the baseset, Save the PQ quantizer to disk for further evaluation
         std::string Path_PQ = Path_folder_recall + "PQ_" + std::to_string(nc)+"_"+std::to_string(PQ_M) + "_" + std::to_string(nbits)+".pq";
+/*
         if (!Retrain && exists(Path_PQ)){
             PQ = faiss::read_ProductQuantizer(Path_PQ.c_str());
         }
         else{
+*/
             for (size_t i = 0; i < PQ_TrainSize; i++){
                 uint32_t ClusterID = Base_ID_seq[RandomId[i]];
                 faiss::fvec_madd(Dimension, TrainSet.data() + i * Dimension, -1.0,  HNSWGraph->getDataByInternalId(ClusterID), SubResidual.data() + i * Dimension);
@@ -353,7 +357,7 @@ uint32_t BIndex::LearnCentroidsINI(
             }
             std::cout << "\n\n\n";
 */
-        }
+        //}
 
         Trecorder.print_record_time_usage(RecordFile, "Train the PQ quantizer");
 
@@ -442,8 +446,8 @@ uint32_t BIndex::LearnCentroidsINI(
                 ClusterCostQueue.pop();
             }
 
-            std::cout << "The top 20 clusters to be further split: \n";
-            for (size_t i = 0; i < 20; i++){
+            std::cout << "The top 50 clusters to be further split: \n";
+            for (size_t i = 0; i < 50; i++){
                 std::cout << ClusterIDBatch[i] << " " << ClusterCostBatch[i] << " " << BaseIds[ClusterIDBatch[i]].size() << " | ";
             }
             std::cout << "\n";
@@ -469,6 +473,7 @@ uint32_t BIndex::LearnCentroidsINI(
                 CentroidOutput.write((char *) & Dim, sizeof(uint32_t));
                 CentroidOutput.write((char *) (Centroids.data() + i * Dimension), Dimension * sizeof(float));
             }
+            CentroidOutput.close();
             Trecorder.print_record_time_usage(RecordFile, "Save the base ID and updated graph information");
         }
     }

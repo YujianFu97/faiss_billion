@@ -13,14 +13,9 @@
 #include <omp.h>
 
 // Need to set this correctly when running million/billion scale datasets
-typedef float DataType;
-//typedef uint8_t DataType;
+//typedef float DataType;
+typedef uint8_t DataType;
 
-struct ClusterCostQueue
-{
-    std::unordered_set<uint32_t> ClusterIDs;
-    std::map<uint32_t, int> VecNumInCluster;
-};
 
 
 /**

@@ -1,4 +1,4 @@
-#include "DEEP1B.h"
+#include "SIFT1B.h"
 
 //For recording
 const bool SavingIndex = true;
@@ -28,7 +28,7 @@ size_t AccustopItem[NumPara] = {100000};
 // For optkmeans
 size_t Nlevel = 2;
 bool UseGraph = true;
-bool UseOptimize = false;
+bool UseOptimize = true;
 bool ConstrolStart = false;
 bool AddiFunction = true;
 
@@ -65,19 +65,19 @@ float Beta = 0.3;
 // Data Path 
 
 // For DEEP1B
-
+/*
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.fvecs";
+*/
 
-/*
 // For SIFT1B
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_learn.bvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.bvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.bvecs";
-*/
+
 
 const std::string PathTrainGt =   PathFolder  + Dataset + "/" + Dataset +"_Train_groundtruth.ivecs";
 const std::string PathTrainDist = PathFolder  + Dataset + "/" + Dataset +"_Train_Dist.fvecs";

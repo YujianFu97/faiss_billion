@@ -203,16 +203,16 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
     // Firstly train the index with original kmeans and then compute the neighbor info
     
     // Prepare the neighbor info
-    std::vector<uint32_t> NeighborID(TrainSize * NeighborNum);
-    std::vector<float> NeighborDist(TrainSize * NeighborNum);
+    std::vector<uint32_t> NeighborClusterID(TrainSize * NeighborNum);
+    std::vector<float> NeighborClusterDist(TrainSize * NeighborNum);
     std::vector<std::vector<uint32_t>> TrainIDs(nc);
     std::vector<std::vector<uint32_t>> TrainBeNNs(TrainSize); // The vectors that takes the target vectors as NN
 
     optkmeans(TrainSet, Dimension, TrainSize, nc, Centroids, verbose, Initialized, Optimize, lambda, OptSize, UseGraph, addi_func, control_start, iterations);
-    GraphSearch(NeighborID.data(), NeighborDist.data(), TrainSet, Centroids, TrainSize, nc, NeighborNum, Dimension);
+    GraphSearch(NeighborClusterID.data(), NeighborClusterDist.data(), TrainSet, Centroids, TrainSize, nc, NeighborNum, Dimension);
 
     for (size_t i = 0; i < TrainSize; i++){
-        TrainIDs[NeighborID[i * NeighborNum]].emplace_back(i);
+        TrainIDs[NeighborClusterID[i * NeighborNum]].emplace_back(i);
     }
 
     std::vector<size_t> ClusterSize(nc);
@@ -227,7 +227,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
     for (size_t i = 0; i < TrainSize; i++){
         faiss::maxheap_heapify(RecallK, VectorDist.data() + i * RecallK, VectorGt.data() + i * RecallK);
         for (size_t j = 0; j < NeighborNum; j++){
-            uint32_t ClusterID = NeighborID[i * NeighborNum + j];
+            uint32_t ClusterID = NeighborClusterID[i * NeighborNum + j];
             size_t ClusterSize = TrainIDs[ClusterID].size();
             for (size_t temp = 0; temp < ClusterSize; temp++){
                 uint32_t VectorID = TrainIDs[ClusterID][temp];
@@ -249,83 +249,72 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
     // Check the neighbor cluster num of all vectors
     // Result: The value in vectorcostsource: the number of NNs in the target cluster
     // Initialize the search cost
-    std::vector<ClusterCostQueue> VectorCostSource(TrainSize);
-    for (size_t i = 0; i < TrainSize; i++){
-        for (size_t j = 0; j < RecallK; j++){
-            uint32_t NNID = VectorGt[i * RecallK + j];
-            uint32_t NNClusterID = NeighborID[NNID * NeighborNum];
-            for (size_t temp = 0; temp < NeighborNum; temp++){
-                if (VectorCostSource[i].ClusterIDs.count(NeighborID[i * NeighborNum + temp] == 0)){
-                    VectorCostSource[i].VecNumInCluster.insert(std::make_pair(NeighborID[i * NeighborNum + temp], 0));
-                }
-                if (NeighborID[i * NeighborNum + temp] == NNClusterID){
-                    VectorCostSource[i].VecNumInCluster[NNClusterID] ++;
-                    break;
-                }
-            }
-        }
+    std::vector<std::unordered_set<uint32_t>> VectorCostSet(TrainSize);
+    for (uint32_t i = 0; i < TrainSize; i++){
+        FetchSearchCost(i, NeighborNum, RecallK, VectorGt.data(), NeighborClusterID.data(), VectorCostSet[i]);
     }
-    // Update the cluster until the search cost is reduced
+
     // Check the NNs of each target vector, whether the NN should be placed into the cluster with target vector
     // Update the vector ID based on the neighbor search cost
-    // This is the cost that is related to the target vector
     // Update the vector assignment: complexity: TrainSize * RecallK * NNRNNNum
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
 
             uint32_t NN = VectorGt[i * RecallK + j];
-            if (NeighborID[NN * NeighborNum] == NeighborID[i * NeighborNum]){
+            if (NeighborClusterID[NN * NeighborNum] == NeighborClusterID[i * NeighborNum]){ // If the NN id is the same with original id, no need to check the shift
                 continue;
             }
             // Check the origin cost
-            uint32_t OriginNNID = NeighborID[NN * NeighborNum];
+            uint32_t OriginNNID = NeighborClusterID[NN * NeighborNum];
             size_t NNRNNNum = TrainBeNNs[NN].size(); // This is the number of vectors that take NN as its K nearest neighbors
-            size_t OriginalClusterCost = 0;
-            for (size_t temp1 = 0; temp1 < NNRNNNum; temp1++){
-                for(auto it = VectorCostSource[TrainBeNNs[NN][temp1]].ClusterIDs.begin(); it!=VectorCostSource[TrainBeNNs[NN][temp1]].ClusterIDs.end(); it++){
+            size_t OriginalClusterCost = 0;  // This is the search cost that is related to the NN vector
+            for (size_t temp0 = 0; temp0 < NNRNNNum; temp0++){
+                uint32_t NNRNN = TrainBeNNs[NN][temp0];
+                for (auto it = VectorCostSet[NNRNN].begin(); it != VectorCostSet[NNRNN].end(); it++){
                     OriginalClusterCost += ClusterSize[*it];
                 }
             }
 
-            uint32_t OriginID = NeighborID[NN * NeighborNum];
-            NeighborID[NN * NeighborNum] = NeighborID[i * NeighborNum];
+            // Shift the NN id to the original vector ID
+            uint32_t OriginID = NeighborClusterID[NN * NeighborNum];
+            NeighborClusterID[NN * NeighborNum] = NeighborClusterID[i * NeighborNum];
             ClusterSize[i * NeighborNum]--; ClusterSize[NN * NeighborNum]++;
-            // Check the shift cost
-            std::vector<ClusterCostQueue> VectorShiftQueue(NNRNNNum);
-            for (size_t temp1 = 0; temp1 < NNRNNNum; temp1++){
-                uint32_t NNRNN = TrainBeNNs[NN][temp1];
-                for (size_t temp2 = 0; temp2 < RecallK; temp2++){
-                    uint32_t NNRNNNN = VectorGt[NNRNN * RecallK + temp2];
-                    for (size_t temp3 = 0; temp3 < NeighborNum; temp3++){
-                        if(VectorShiftQueue[temp1].ClusterIDs.count(NeighborID[NNRNN * NeighborNum + temp3]) == 0){
-                            VectorShiftQueue[temp1].VecNumInCluster.insert(std::make_pair(NeighborID[NNRNN * NeighborNum + temp3], 0));
-                        }
 
-                        if (NeighborID[NNRNN * NeighborNum + temp3] == NeighborID[NNRNNNN * NeighborNum]){
-                            VectorShiftQueue[temp1].VecNumInCluster[NeighborID[NNRNN * NeighborNum + temp3]] ++;
-                            break;
-                        }
-                    }
-                }
-            }
+            // Check the shift cost, can the shift reduce the search cost?
+            std::vector<std::unordered_set<uint32_t>> VectorShiftCostSet(NNRNNNum);
             size_t ShiftVectorCost = 0;
-            for (size_t temp1 = 0; temp1 < NNRNNNum; temp1++){
-                for(auto it = VectorShiftQueue[temp1].ClusterIDs.begin(); it!=VectorShiftQueue[temp1].ClusterIDs.end(); it++){
+            for (size_t temp0 = 0; temp0 < NNRNNNum; temp0++){
+
+                uint32_t NNRNN = TrainBeNNs[NN][temp0];
+                FetchSearchCost(NNRNN, NeighborNum, RecallK, VectorGt.data(), NeighborClusterID.data(), VectorShiftCostSet[temp0]);
+
+                for (auto it = VectorShiftCostSet[temp0].begin(); it != VectorShiftCostSet[temp0].end(); it++){
                     ShiftVectorCost += ClusterSize[*it];
                 }
             }
 
+            
             if (OriginalClusterCost < ShiftVectorCost){
-                NeighborID[NN * NeighborNum] = OriginID;
+                // Need to define the loss function, if the loss decrease, then do the shift, else we recover the assignment
+                NeighborClusterID[NN * NeighborNum] = OriginID;
                 ClusterSize[i * NeighborNum]++; ClusterSize[NN * NeighborNum]--;
             }
         }
     }
 }
 
-float FetchSearchCost(size_t ClusterNum, size_t RecallK, ClusterCostQueue & VectorCostQUeue, uint32_t * NeighborID){
+float FetchSearchCost(uint32_t VectorID, size_t NeighborNum, size_t RecallK, int64_t * VectorGt, uint32_t * NeighborClusterID, std::unordered_set<uint32_t> & ClusterID){
     for (size_t i = 0; i < RecallK; i++){
-        
+        uint32_t NN = VectorGt[i];
+        uint32_t NNClusterID = NeighborClusterID[NN * NeighborNum];
+        for (size_t temp0 = 0; temp0 < NeighborNum; temp0++){
+            if (ClusterID.count(NeighborClusterID[VectorID * NeighborNum + temp0]) == 0){
+                ClusterID.insert(NeighborClusterID[VectorID * NeighborNum + temp0]);
+            }
+            if (NeighborClusterID[VectorID * NeighborNum + temp0] == NNClusterID){
+                break;
+            }
+        }
     }
 }
 
