@@ -207,7 +207,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
     std::vector<float> NeighborDist(TrainSize * NeighborNum);
     std::vector<std::vector<uint32_t>> TrainIDs(nc);
     std::vector<std::vector<uint32_t>> TrainBeNNs(TrainSize); // The vectors that takes the target vectors as NN
-    
+
     optkmeans(TrainSet, Dimension, TrainSize, nc, Centroids, verbose, Initialized, Optimize, lambda, OptSize, UseGraph, addi_func, control_start, iterations);
     GraphSearch(NeighborID.data(), NeighborDist.data(), TrainSet, Centroids, TrainSize, nc, NeighborNum, Dimension);
 
@@ -248,6 +248,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
 
     // Check the neighbor cluster num of all vectors
     // Result: The value in vectorcostsource: the number of NNs in the target cluster
+    // Initialize the search cost
     std::vector<ClusterCostQueue> VectorCostSource(TrainSize);
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
@@ -268,7 +269,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
     // Check the NNs of each target vector, whether the NN should be placed into the cluster with target vector
     // Update the vector ID based on the neighbor search cost
     // This is the cost that is related to the target vector
-    // The cluster search cost 
+    // Update the vector assignment: complexity: TrainSize * RecallK * NNRNNNum
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
 
@@ -278,7 +279,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
             }
             // Check the origin cost
             uint32_t OriginNNID = NeighborID[NN * NeighborNum];
-            size_t NNRNNNum = TrainBeNNs[NN].size();
+            size_t NNRNNNum = TrainBeNNs[NN].size(); // This is the number of vectors that take NN as its K nearest neighbors
             size_t OriginalClusterCost = 0;
             for (size_t temp1 = 0; temp1 < NNRNNNum; temp1++){
                 for(auto it = VectorCostSource[TrainBeNNs[NN][temp1]].ClusterIDs.begin(); it!=VectorCostSource[TrainBeNNs[NN][temp1]].ClusterIDs.end(); it++){
@@ -320,10 +321,13 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
             }
         }
     }
-
-    // Update the cost
 }
 
+float FetchSearchCost(size_t ClusterNum, size_t RecallK, ClusterCostQueue & VectorCostQUeue, uint32_t * NeighborID){
+    for (size_t i = 0; i < RecallK; i++){
+        
+    }
+}
 
 // Do the kmeans training with the cluster size optimization
 

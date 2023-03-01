@@ -1184,7 +1184,7 @@ std::string PathTrainsetLabel, size_t Dimension, size_t TrainSize, float TargetR
 // The section for changing the ClusterNum
 // Input parameters: (1) scalar value (2) data vector (3) path (4) point, data structure
 std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
-    size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt,
+    size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt,
     float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, 
     std::string Path_base, 
     std::ofstream & RecordFile, hnswlib::HierarchicalNSW * CentroidHNSW, faiss::ProductQuantizer * PQ, std::vector<std::vector<uint32_t>> & BaseIds)
@@ -1211,7 +1211,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     float MinimumCoef = 0.95;
     size_t MaxRepeatTimes = 3;
     while(!ValidResult){
-        size_t ClusterNum = size_t(nc / 500);
+        size_t ClusterNum = size_t(nb / nc / 500);
         size_t ClusterBatch = std::ceil(float(ClusterNum) / 10);
         std::vector<float> ClusterNumList;
         std::vector<float> CanLengthList;
