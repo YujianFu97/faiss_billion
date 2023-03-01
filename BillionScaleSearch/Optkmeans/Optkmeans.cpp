@@ -166,6 +166,21 @@ void OptimizeCluster(size_t nc, size_t TrainSize, size_t NeighborSize, float * C
     }
 }
 
+float FetchSearchCost(uint32_t VectorID, size_t NeighborNum, size_t RecallK, int64_t * VectorGt, uint32_t * NeighborClusterID, std::unordered_set<uint32_t> & ClusterID){
+    for (size_t i = 0; i < RecallK; i++){
+        uint32_t NN = VectorGt[i];
+        uint32_t NNClusterID = NeighborClusterID[NN * NeighborNum];
+        for (size_t temp0 = 0; temp0 < NeighborNum; temp0++){
+            if (ClusterID.count(NeighborClusterID[VectorID * NeighborNum + temp0]) == 0){
+                ClusterID.insert(NeighborClusterID[VectorID * NeighborNum + temp0]);
+            }
+            if (NeighborClusterID[VectorID * NeighborNum + temp0] == NNClusterID){
+                break;
+            }
+        }
+    }
+}
+
 // Kmeans training with neighbor info for optimization
 float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, 
             float * Centroids, bool verbose, bool Initialized, bool Optimize, 
@@ -298,21 +313,6 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
                 // Need to define the loss function, if the loss decrease, then do the shift, else we recover the assignment
                 NeighborClusterID[NN * NeighborNum] = OriginID;
                 ClusterSize[i * NeighborNum]++; ClusterSize[NN * NeighborNum]--;
-            }
-        }
-    }
-}
-
-float FetchSearchCost(uint32_t VectorID, size_t NeighborNum, size_t RecallK, int64_t * VectorGt, uint32_t * NeighborClusterID, std::unordered_set<uint32_t> & ClusterID){
-    for (size_t i = 0; i < RecallK; i++){
-        uint32_t NN = VectorGt[i];
-        uint32_t NNClusterID = NeighborClusterID[NN * NeighborNum];
-        for (size_t temp0 = 0; temp0 < NeighborNum; temp0++){
-            if (ClusterID.count(NeighborClusterID[VectorID * NeighborNum + temp0]) == 0){
-                ClusterID.insert(NeighborClusterID[VectorID * NeighborNum + temp0]);
-            }
-            if (NeighborClusterID[VectorID * NeighborNum + temp0] == NNClusterID){
-                break;
             }
         }
     }
