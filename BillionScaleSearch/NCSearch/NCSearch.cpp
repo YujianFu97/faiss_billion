@@ -1502,6 +1502,7 @@ void BillionUpdateCost(
         BaseInput.close();
     }
 */
+    assert(Dimension > 0 && LowerBound > 0 && exists(Path_base));
     std::cout << "Update cluster search cost based on centroids with Number of cluster visited: " << ClusterNum << "\n";
 #pragma omp parallel for
     for (size_t i = 0; i < NC; i++){
