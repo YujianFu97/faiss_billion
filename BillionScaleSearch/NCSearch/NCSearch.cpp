@@ -1510,6 +1510,11 @@ void BillionUpdateCost(
         std::vector<float> VectorDist(ClusterNum);
 
         auto result = Graph->searchKnn(Graph->getDataByInternalId(i), ClusterNum);
+        for (size_t j = 0; j < ClusterNum; j++){
+            VectorLabel[ClusterNum - j - 1] = result.top().second;
+            VectorDist[ClusterNum - j - 1] = result.top().first;
+            result.pop();
+        }
         size_t CandidateListSize = 0;
         for(size_t j = 0; j < ClusterNum; j++){
             CandidateListSize += BaseIds[i].size() * BaseIds[VectorLabel[j]].size();

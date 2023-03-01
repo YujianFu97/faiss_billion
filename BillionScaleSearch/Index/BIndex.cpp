@@ -449,6 +449,12 @@ uint32_t BIndex::LearnCentroidsINI(
                 ClusterCostQueue.pop();
             }
 
+            std::cout << "The top 20 clusters to be further split: \n";
+            for (size_t i = 0; i < 20; i++){
+                std::cout << ClusterIDBatch[i] << " " << ClusterCostBatch[i] << " " << BaseIds[ClusterIDBatch[i]].size() << " | ";
+            }
+            std::cout << "\n";
+
             BillionUpdateCentroids(Dimension, NCBatch, SumClusterCost / nc, Optimize, Lambda, OptSize, nc, ClusterCostBatch.data(), ClusterIDBatch.data(), Centroids.data(), Base_ID_seq.data(), Path_base, BaseIds);
             Trecorder.print_record_time_usage(RecordFile, "Split the clusters and update the vector IDs");
 
