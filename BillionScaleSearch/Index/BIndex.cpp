@@ -380,6 +380,7 @@ uint32_t BIndex::LearnCentroidsINI(
         Trecorder.print_record_time_usage(RecordFile, "Train the PQ quantizer");
 
         // 2. Update the search performance
+        std::cout << "Get into the recall performance estimation process\n";
         auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, QuerySet.data(), QueryGT.data(), CNorms.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
         delete PQ;
         Trecorder.print_record_time_usage(RecordFile, "Update the search recall performance");
