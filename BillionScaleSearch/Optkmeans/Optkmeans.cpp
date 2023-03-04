@@ -283,6 +283,62 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
         }
     }
 }
+float updatecentroids(size_t nc, size_t Dimension, size_t TrainSize, size_t NeighborSize,
+    float * TrainSet, uint32_t * AssignmentID, float * Centroids, float * cluster_size){
+    // Update the centroids
+    
+    std::fill(Centroids, Centroids + nc*Dimension, 0);
+
+    //std::cout << "Update the cluster centroids\n";
+    // Get the sum of all vectors in one cluster
+    for (size_t j = 0; j < TrainSize; j++){
+        uint32_t id = AssignmentID[j];
+        for (size_t k = 0; k < Dimension; k++){
+            Centroids[id * Dimension + k] += TrainSet[j * Dimension + k];
+        }
+    }
+
+    // Get the mean of all vectors in one cluster
+    for (size_t j = 0; j < nc; j++){
+        float cz = (float)cluster_size[j];
+        if (cz != 0){
+            for (size_t k = 0; k < Dimension; k++){
+                Centroids[j * Dimension + k] /= cz;
+            }
+        }
+    }
+    //std::cout << "Update the void centroids\n";
+    // Handle the void clusters
+    size_t n_void = 0;
+    faiss::RandomGenerator rng (1234);
+    size_t Sum = 0;
+    for (size_t ci = 0; ci < nc; ci++){
+        Sum += cluster_size[ci];
+        if (cluster_size[ci] == 0){
+            size_t cj;
+            for (cj = 0; 1; cj = (cj+1) % nc){
+                float p = (cluster_size[cj] - 1.0) / (float) (TrainSize - nc);
+                float r = rng.rand_float();
+                if (r< p){break;}
+            }
+            memcpy (Centroids + ci *Dimension, Centroids + cj * Dimension, sizeof(float) * Dimension);
+            /* Introduce small pertubation */
+            for (size_t j = 0; j < Dimension; j++){
+                if (j%2 == 0){
+                    Centroids[ci * Dimension + j] *= 1 + EPS;
+                    Centroids[cj * Dimension + j] *= 1 - EPS;
+                }
+                else{
+                    Centroids[ci * Dimension + j] *= 1 - EPS;
+                    Centroids[cj * Dimension + j] *= 1 + EPS;
+                }
+            }
+            cluster_size[ci] = cluster_size[cj] / 2;
+            cluster_size[cj] -= cluster_size[ci];
+            n_void++;
+        }
+    }
+}
 
 // Kmeans training with neighbor info for optimization
 float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
@@ -423,7 +479,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
                     }
                 }
                 if (SqrtCPDist < 0){
-                    SqrtCPDist = sqrt(faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, Centroids + NNClusterID * Dimension));
+                    SqrtCPDist = sqrt(faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, Centroids + NNClusterID * Dimension, Dimension));
                 }
 
                 
@@ -440,62 +496,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
 
 }
 
-float updatecentroids(size_t nc, size_t Dimension, size_t TrainSize, size_t NeighborSize,
-    float * TrainSet, uint32_t * AssignmentID, float * Centroids, float * cluster_size){
-    // Update the centroids
-    
-    std::fill(Centroids, Centroids + nc*Dimension, 0);
 
-    //std::cout << "Update the cluster centroids\n";
-    // Get the sum of all vectors in one cluster
-    for (size_t j = 0; j < TrainSize; j++){
-        uint32_t id = AssignmentID[j];
-        for (size_t k = 0; k < Dimension; k++){
-            Centroids[id * Dimension + k] += TrainSet[j * Dimension + k];
-        }
-    }
-
-    // Get the mean of all vectors in one cluster
-    for (size_t j = 0; j < nc; j++){
-        float cz = (float)cluster_size[j];
-        if (cz != 0){
-            for (size_t k = 0; k < Dimension; k++){
-                Centroids[j * Dimension + k] /= cz;
-            }
-        }
-    }
-    //std::cout << "Update the void centroids\n";
-    // Handle the void clusters
-    size_t n_void = 0;
-    faiss::RandomGenerator rng (1234);
-    size_t Sum = 0;
-    for (size_t ci = 0; ci < nc; ci++){
-        Sum += cluster_size[ci];
-        if (cluster_size[ci] == 0){
-            size_t cj;
-            for (cj = 0; 1; cj = (cj+1) % nc){
-                float p = (cluster_size[cj] - 1.0) / (float) (TrainSize - nc);
-                float r = rng.rand_float();
-                if (r< p){break;}
-            }
-            memcpy (Centroids + ci *Dimension, Centroids + cj * Dimension, sizeof(float) * Dimension);
-            /* Introduce small pertubation */
-            for (size_t j = 0; j < Dimension; j++){
-                if (j%2 == 0){
-                    Centroids[ci * Dimension + j] *= 1 + EPS;
-                    Centroids[cj * Dimension + j] *= 1 - EPS;
-                }
-                else{
-                    Centroids[ci * Dimension + j] *= 1 - EPS;
-                    Centroids[cj * Dimension + j] *= 1 + EPS;
-                }
-            }
-            cluster_size[ci] = cluster_size[cj] / 2;
-            cluster_size[cj] -= cluster_size[ci];
-            n_void++;
-        }
-    }
-}
 
 // Do the kmeans training with the cluster size optimization, expect balanced cluster size
 float optkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, 
