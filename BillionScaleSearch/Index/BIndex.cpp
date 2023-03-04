@@ -220,9 +220,10 @@ uint32_t BIndex::LearnCentroidsINI(
 
     // 3.1. Assign the billion-scale dataset in batch and in parallel, we can run this assignment process on multiple machines
     std::ifstream BaseInput(Path_base, std::ios::binary);
+    std::string Path_ID_seq  = Path_folder + "BaseID_" + std::to_string(nc) + ".seq";
     for (uint32_t batch_idx = 0; batch_idx < Assignment_num; batch_idx++){
         std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(batch_idx + 1) + "_" + std::to_string(Assignment_num_batch) + ".ivecs";
-        if (exists(Batch_ID_path)){continue;}
+        if (exists(Path_ID_seq) || exists(Batch_ID_path)){continue;}
 
         std::cout << "Assigning the " << Assignment_indice + batch_idx + 1 << " / " << Assignment_num_batch << " batch of the dataset and save ID to" << Batch_ID_path << " Time consumption: " << Trecorder.get_time_usage() << " s\n";
         BaseInput.seekg((Assignment_indice + batch_idx) * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
@@ -245,28 +246,32 @@ uint32_t BIndex::LearnCentroidsINI(
     // 3.2. Load the base vector ID to main memory, ensure the ID_batch_file exists
     for (uint32_t i = 0; i < Assignment_num_batch; i++){
         std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(i + 1) + "_" + std::to_string(Assignment_num) + ".ivecs";
-        if(!exists(Batch_ID_path)){std::cout << "Base vector ID file " << Batch_ID_path << " not exists, cannot continue the training process\n"; exit(0);}
+        if(!exists(Batch_ID_path) && !exists(Path_ID_seq) ){std::cout << "Base vector ID file " << Batch_ID_path << " not exists, cannot continue the training process\n"; exit(0);}
     }
 
-    for (uint32_t i = 0; i < Assignment_num_batch; i++){
-        std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(i + 1) + "_" + std::to_string(Assignment_num) + ".ivecs";
-        std::ifstream Batch_ID_input(Batch_ID_path, std::ios::binary);
-        readXvec<uint32_t>(Batch_ID_input, Base_ID_seq.data() + i * Assignment_batch_size, Assignment_batch_size, 1);
-        Batch_ID_input.close();
+    if (exists(Path_ID_seq)){
+        std::ifstream BaseIDSeqINput(Path_ID_seq, std::ios::binary);
+        BaseIDSeqINput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
+        BaseIDSeqINput.close();
     }
+    else{
+        for (uint32_t i = 0; i < Assignment_num_batch; i++){
+            std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(i + 1) + "_" + std::to_string(Assignment_num) + ".ivecs";
+            std::ifstream Batch_ID_input(Batch_ID_path, std::ios::binary);
+            readXvec<uint32_t>(Batch_ID_input, Base_ID_seq.data() + i * Assignment_batch_size, Assignment_batch_size, 1);
+            Batch_ID_input.close();
+        }
+        std::ofstream BaseIDSeqOutput(Path_ID_seq, std::ios::binary);
+        BaseIDSeqOutput.write((char * ) Base_ID_seq.data(), nb * sizeof(uint32_t));
+        BaseIDSeqOutput.close();
+        std::cout << "Save vector ID in seq index to " << Path_ID_seq << "\n";
+    }
+
     // 3.3 Save the ID to inverted format
     BaseIds.resize(nc); 
     for (uint32_t i = 0; i < nb; i++){
         assert(Base_ID_seq[i] < nc);
         BaseIds[Base_ID_seq[i]].emplace_back(i);
-    }
-
-    std::string Path_ID_seq = Path_folder + "BaseID_" + std::to_string(nc) + ".seq"; 
-    if (!exists(Path_ID_seq)){
-        std::ofstream BaseIDSeqOutput(Path_ID_seq, std::ios::binary);
-        BaseIDSeqOutput.write((char * ) Base_ID_seq.data(), nb * sizeof(uint32_t));
-        BaseIDSeqOutput.close();
-        std::cout << "Save vector ID in seq index to " << Path_ID_seq << "\n";
     }
     Trecorder.print_record_time_usage(RecordFile, "Load base ID to index and merge the ID");
 
