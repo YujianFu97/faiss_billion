@@ -52,16 +52,19 @@ struct time_recorder{
         }
 
         inline void record_time_usage(std::ofstream & output_record, std::string s){
-            output_record << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s " << std::endl;
+            time_t now = std::time(0); char * dt = ctime(&now);
+            output_record << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s, now time: " << dt << std::endl;
         }
 
         inline void print_time_usage(std::string s){
-            std::cout << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s "<< std::endl; 
+            time_t now = std::time(0); char * dt = ctime(&now);
+            std::cout << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s, now time: " << dt << std::endl; 
         }
 
         inline void print_record_time_usage(std::ofstream & output_record, std::string s){
-            output_record << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s " << std::endl;
-            std::cout << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s "<< std::endl; 
+            time_t now = std::time(0); char * dt = ctime(&now);
+            output_record << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s, now time: " << dt << std::endl;
+            std::cout << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s, now time: " << dt << std::endl;
         }
 
         inline float get_time_usage(){
