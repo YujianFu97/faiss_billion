@@ -428,7 +428,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
 
                 
 
-                float NSDist = SqrtCPDist / 2 - (VPDist + CPDist - VCDist) / (2 * SqrtCPDist);
+//                float NSDist = SqrtCPDist / 2 - (VPDist + CPDist - VCDist) / (2 * SqrtCPDist);
             }
         }
     }
