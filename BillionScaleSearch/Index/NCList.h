@@ -1,3 +1,6 @@
+#ifndef _NLIndex_H
+#define _NLIndex_H
+
 #include "BIndex.h"
 
 struct NCListIndex: BIndex
@@ -24,3 +27,5 @@ struct NCListIndex: BIndex
     void Search(size_t K, float * Query, int64_t * QueryIds, float * QueryDists, size_t EfSearch, size_t MaxItem, size_t AccuStopItem);
     std::string Eval(std::string PathQuery, std::string PathGt, size_t nq, size_t ngt, size_t NumRecall, size_t NumPara, size_t * RecallK, size_t * MaxItem, size_t * EfSearch, size_t * AccuStopItem);
 };
+
+#endif

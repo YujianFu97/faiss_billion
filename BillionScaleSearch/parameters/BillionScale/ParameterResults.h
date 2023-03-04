@@ -1,4 +1,4 @@
-#include "SIFT1B.h"
+#include "DEEP1B.h"
 
 //For recording
 const bool SavingIndex = true;
@@ -40,7 +40,7 @@ size_t EfConstruction = 40;
 size_t IniM = 1000000;
 size_t MaxM = 20000000;
 size_t ClusterBoundSize = 500;
-size_t CheckBatch = IniM / 10;
+size_t CheckBatch = IniM / 5;
 size_t Verbose = true;
 size_t PQ_TrainSize_PS = 50000; 
 size_t K = 10;
@@ -65,19 +65,20 @@ float Beta = 0.3;
 // Data Path 
 
 // For DEEP1B
-/*
+
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.fvecs";
-*/
+
 
 // For SIFT1B
+/*
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_learn.bvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.bvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.bvecs";
-
+*/
 
 const std::string PathTrainGt =   PathFolder  + Dataset + "/" + Dataset +"_Train_groundtruth.ivecs";
 const std::string PathTrainDist = PathFolder  + Dataset + "/" + Dataset +"_Train_Dist.fvecs";

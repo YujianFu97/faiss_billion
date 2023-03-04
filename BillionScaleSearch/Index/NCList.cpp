@@ -244,7 +244,7 @@ void NCListIndex::Search(size_t K, float * Query, int64_t * QueryIds, float * Qu
 
 
 /**
- * The Math Equations of the Neighbor Cluster Computation
+ * The Math Equations of the Neighbor Cluster Computation, v is in the side of p
  * D(v, p): a; D(v, c): b; D(c, p): c; The mediod of c, p: m
  * The distance between v and the mid line:
  * cos(A) = (a^2 + c^2 - b^2) / (2 * a * c)
