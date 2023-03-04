@@ -1193,6 +1193,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     time_recorder TRecorder = time_recorder();
     
     // Accumulate the vector quantization in the clusters to be visited by the queries
+    std::cout << "Check the recall performance on different num clusters to be visited\n";
     std::vector<bool> QuantizeLabel(nc, false);
     std::vector<std::vector<uint8_t>> BaseCodeSubset(nc);
     std::vector<std::vector<float>> BaseRecoverNormSubset(nc);
