@@ -253,6 +253,14 @@ uint32_t BIndex::LearnCentroidsINI(
         std::ifstream BaseIDSeqINput(Path_ID_seq, std::ios::binary);
         BaseIDSeqINput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
         BaseIDSeqINput.close();
+        std::cout << "The 10 base IDs in the top and the end:\n";
+        for (size_t i = 0; i < 10; i++){
+            std::cout << Base_ID_seq[i] << " ";
+        }
+        for (size_t i = 0; i < 10; i++){
+            std::cout << Base_ID_seq[nb - 10 + i] << " ";
+        }
+        std::cout << "\n";
     }
     else{
         for (uint32_t i = 0; i < Assignment_num_batch; i++){
@@ -273,6 +281,11 @@ uint32_t BIndex::LearnCentroidsINI(
         assert(Base_ID_seq[i] < nc);
         BaseIds[Base_ID_seq[i]].emplace_back(i);
     }
+    std::cout << "The top 10 cluster size: \n";
+    for (size_t i = 0; i < 10; i++){
+        std::cout << BaseIds[i].size() << " ";
+    }
+    std::cout << "\n";
     Trecorder.print_record_time_usage(RecordFile, "Load base ID to index and merge the ID");
 
     // 4. Load the query and groundtruth of the queries on baseset for recall check
