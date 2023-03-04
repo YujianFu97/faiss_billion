@@ -65,7 +65,6 @@ float Beta = 0.3;
 // Data Path 
 
 // For DEEP1B
-
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";

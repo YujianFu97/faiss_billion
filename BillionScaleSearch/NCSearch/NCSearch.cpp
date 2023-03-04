@@ -1196,6 +1196,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     std::vector<bool> QuantizeLabel(nc, false);
     std::vector<std::vector<uint8_t>> BaseCodeSubset(nc);
     std::vector<std::vector<float>> BaseRecoverNormSubset(nc);
+    std::cout << "-2\n";
 
     std::vector<int64_t> ResultID(RecallK * nq, 0);
     std::vector<float> ResultDist(RecallK * nq, 0);
@@ -1206,6 +1207,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             GtSets[i].insert(QueryGtLabel[ngt * i + j]);
         }
     }
+    std::cout << "-1\n";
 
     bool ValidResult = false;
     float MinimumCoef = 0.95;
@@ -1235,7 +1237,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         while (UpdateClusterNum)
         {
             // Record the time of graph search on centroids
-            //std::cout << "0: \n";
+            std::cout << "0: \n";
             std::vector<float> QueryDist(nq * ClusterNum);
             std::vector<uint32_t> QueryLabel(nq * ClusterNum);
             TRecorder.reset();
@@ -1249,7 +1251,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             }
 
             TRecorder.recordTimeConsumption1();
-            //std::cout << "1: \n";
+            std::cout << "1: \n";
 
             size_t NumLoadCluster = 0;
             TRecorder.reset();
@@ -1285,7 +1287,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                             //std::cout << faiss::fvec_norm_L2sqr(BaseResidual.data(), Dimension) << " " << faiss::fvec_norm_L2sqr(RecoverResidual.data(), Dimension) << " " << faiss::fvec_L2sqr(BaseResidual.data(), RecoverResidual.data(), Dimension) << " | "; 
                             BaseInput.close();
                         }
-                        
                     }
                 }
             }
