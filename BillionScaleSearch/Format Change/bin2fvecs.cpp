@@ -30,7 +30,10 @@ int main(){
         Input.read((char *) DataVector.data(), sizeof(DataType) * Dimension);
         Output.write((char *) & Dimension, sizeof(uint32_t));
         Output.write((char *) DataVector.data(), sizeof(DataType) * Dimension);
-        std::cout << "Processing " << i <<  " / " << nb << "\r";
+
+        if (i % 100000 == 0){
+            std::cout << "Processing " << i <<  " / " << nb << "\r";
+        }
     }
 }
 
