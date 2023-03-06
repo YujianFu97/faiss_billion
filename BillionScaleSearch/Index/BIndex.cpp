@@ -478,7 +478,7 @@ uint32_t BIndex::LearnCentroidsINI(
                         size_t StartIndice = 0;
                         size_t EndIndice = StartIndice + (nt < ClusterSize ? nt : ClusterSize);
                         bool FlagContinue = true;
-                        std::cout << nq << " " << QueryIdx << " " << i << " " << ClusterSize << "\r";
+                        std::cout << nq << " " << QueryIdx << " " << i << " " << ClusterSize << " " << TRecorder.getTimeConsumption() / 1000000 << "\n";
 
                         while(FlagContinue){
 #pragma omp parallel for
