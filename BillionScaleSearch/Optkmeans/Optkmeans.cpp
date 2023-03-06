@@ -483,13 +483,18 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
                 }
 
                 
-                float VPDist = -1;
+                float VCDist = -1;
                 for (size_t temp0; temp0 < NeighborNum; temp0++){
-                    if (NeighborClusterID[VectorGt[i * RecallK + j] * NeighborNum + ])
+                    if (NeighborClusterID[VectorGt[i * RecallK + j] * NeighborNum + temp0] == TargetClusterID){
+                        VCDist = NeighborClusterDist[VectorGt[i * RecallK + j] * NeighborNum + temp0];
+                    }
+                }
+                if(VCDist < 0){
+                    faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, TrainSet + VectorGt[i * RecallK + j] * Dimension, Dimension);
                 }
                 faiss::fvec_L2sqr(Centroids + NNClusterID * Dimension, TrainSet + VectorGt[i * RecallK + j] * Dimension, Dimension);
                 float CPDist = SqrtCPDist * SqrtCPDist;
-                float VCDist = faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, TrainSet + VectorGt[i * RecallK + j] * Dimension, Dimension);
+                float VPDist = NeighborClusterDist[VectorGt[i * RecallK + j] * NeighborNum];
                 float NSDist = SqrtCPDist / 2 - (VPDist + CPDist - VCDist) / (2 * SqrtCPDist);
             }
         }
