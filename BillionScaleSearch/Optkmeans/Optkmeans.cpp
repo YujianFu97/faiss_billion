@@ -204,7 +204,7 @@ uint32_t * AssignmentID, uint32_t * NeighborClusterID, std::unordered_set<uint32
     }
 }
 
-float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Dimension, float prop,
+void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Dimension, float prop,
     std::vector<std::vector<uint32_t>> & TrainBeNNs,
     float * TrainSet, float * Centroids, int64_t * VectorGt, uint32_t * AssignmentID, uint32_t * NeighborClusterID, float * ClusterSize, float * NeighborClusterDist
 ){
@@ -286,7 +286,7 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
     }
 }
 
-void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize, size_t NeighborSize,
+void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize,
     float * TrainSet, uint32_t * AssignmentID, float * Centroids, float * cluster_size){
     // Update the centroids
 
@@ -345,9 +345,9 @@ void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize, size_t Neigh
 
 // Kmeans training with neighbor info for optimization
 std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
-            float * Centroids, bool verbose, bool Initialized, bool Optimize, 
-            float lambda, size_t OptSize, bool UseGraph, bool  addi_func, 
-            bool  control_start, size_t iterations, bool keeptrainlabels, 
+            float * Centroids, bool verbose, bool Optimize, 
+            float lambda, size_t OptSize, bool UseGraph, 
+            size_t iterations, bool keeptrainlabels, 
             uint32_t * trainlabels, float * traindists){
     
     // This is the number of clusters to be considered in groundtruth
@@ -429,7 +429,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
         neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), AssignmentID.data(), NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
 
         // Update the centroids
-        updatecentroids(nc, Dimension, TrainSize, NeighborNum, TrainSet, AssignmentID.data(), Centroids, ClusterSize.data());
+        updatecentroids(nc, Dimension, TrainSize, TrainSet, AssignmentID.data(), Centroids, ClusterSize.data());
 
         // Update the train vector assignment
         for (size_t i = 0; i < nc; i++){TrainIDs[i].resize(0);}
@@ -456,6 +456,10 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
 
         for (size_t i = 0; i < TrainSize; i++){
             AssignmentID[i] = NeighborClusterID[i * NeighborNum];
+            if (keeptrainlabels){
+                trainlabels[i] = NeighborClusterID[i * NeighborNum];
+                traindists[i] = NeighborClusterDist[i * NeighborNum];
+            }
         }
     }
 

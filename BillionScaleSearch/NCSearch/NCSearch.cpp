@@ -1271,12 +1271,16 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             std::vector<float> Base_batch(Assignment_batch_size * Dimension);
 
             FILE * fBaseInput = fopen(Path_base.c_str(), "rb+");
-            
+
             for (size_t i = 0; i < Assignment_num_batch; i++){
                 TRecorder.reset();
-                fread(Base_batch.data(), sizeof(float), Assignment_batch_size, fBaseInput);
+                for (size_t temp = 0; temp < Assignment_batch_size; temp++){
+                    size_t SuccessItems = fread(Base_batch.data() + i * Dimension, sizeof(DataType), Dimension, fBaseInput);
+                    assert(SuccessItems == Dimension);
+                }
+
                 TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch with fread");
-                readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
+                readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
                 TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
 #pragma omp parallel for
                 for (size_t j = 0; j < Assignment_batch_size; j++){
@@ -1444,6 +1448,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                 UpdateClusterNum = false;
                 AchieveTargetRecall = false;
             }
+
             else if (VisitedGt / nq > TargetRecall){
                 ResultIndice = ClusterNumList.size() - 1;
                 if (IncreaseClusterNum){
