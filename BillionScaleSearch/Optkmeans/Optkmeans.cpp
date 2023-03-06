@@ -211,8 +211,9 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
     // Check the neighbor cluster num of all vectors
     // Result: The value in vectorcostsource: the number of NNs in the target cluster
     // Initialize the search cost of each train vector
-#pragma omp parallel for
+
     std::vector<std::unordered_set<uint32_t>> VectorCostSet(TrainSize);
+#pragma omp parallel for
     for (uint32_t i = 0; i < TrainSize; i++){
         FetchSearchCost(i, NeighborNum, RecallK, VectorGt + i * RecallK, AssignmentID, NeighborClusterID, VectorCostSet[i]);
     }
