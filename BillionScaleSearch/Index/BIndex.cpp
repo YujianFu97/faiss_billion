@@ -431,6 +431,7 @@ uint32_t BIndex::LearnCentroidsINI(
         float PreviousRecordTime1 = 0;
         float PreviousRecordTime3 = 0;
         size_t RepeatTimes = 0;
+        int nt = omp_get_max_threads();
 
         // Change different ClusterNum
         
@@ -454,7 +455,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
-            
+
 
             size_t NumLoadCluster = 0;
             TRecorder.reset();
@@ -472,25 +473,37 @@ uint32_t BIndex::LearnCentroidsINI(
                         BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
                         BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
 
-//#pragma omp parallel for
-                        std::cout << QueryIdx << " " << i << " " << BaseIds[ClusterLabel].size() << "\n";
-                        for (size_t j = 0; j < BaseIds[ClusterLabel].size(); j++){
-                            std::ifstream BaseInput(Path_base, std::ios::binary);
-                            std::vector<float> BaseVector(Dimension);
-                            BaseInput.seekg(BaseIds[ClusterLabel][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+                        
+                        size_t ClusterSize = BaseIds[ClusterLabel].size();
 
-                            readXvecFvec<DataType>(BaseInput, BaseVector.data(), Dimension, 1);
-                            std::vector<float> BaseResidual(Dimension);
-                            std::vector<float> RecoverResidual(Dimension);
-                            faiss::fvec_madd(Dimension, BaseVector.data(), -1.0,  HNSWGraph->getDataByInternalId(ClusterLabel), BaseResidual.data());
-                            PQ->compute_code(BaseResidual.data(), BaseCodeSubset[ClusterLabel].data() + j * PQ->code_size);
-                            PQ->decode(BaseCodeSubset[ClusterLabel].data() + j * PQ->code_size, RecoverResidual.data());
-                            std::vector<float> RecoverVector(Dimension);
-                            faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, HNSWGraph->getDataByInternalId(ClusterLabel), RecoverVector.data());
-                            BaseRecoverNormSubset[ClusterLabel][j] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
+                        size_t StartIndice = 0;
+                        size_t EndIndice = StartIndice + (nt < ClusterSize ? nt : ClusterSize);
+                        bool FlagContinue = true;
 
-                            //std::cout << faiss::fvec_norm_L2sqr(BaseResidual.data(), Dimension) << " " << faiss::fvec_norm_L2sqr(RecoverResidual.data(), Dimension) << " " << faiss::fvec_L2sqr(BaseResidual.data(), RecoverResidual.data(), Dimension) << " | "; 
-                            BaseInput.close();
+                        while(FlagContinue){
+#pragma omp parallel for
+                            for (size_t j = StartIndice; j < EndIndice; j++){
+                                std::ifstream BaseInput(Path_base, std::ios::binary);
+                                std::vector<float> BaseVector(Dimension);
+                                BaseInput.seekg(BaseIds[ClusterLabel][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+
+                                readXvecFvec<DataType>(BaseInput, BaseVector.data(), Dimension, 1);
+                                std::vector<float> BaseResidual(Dimension);
+                                std::vector<float> RecoverResidual(Dimension);
+                                faiss::fvec_madd(Dimension, BaseVector.data(), -1.0,  HNSWGraph->getDataByInternalId(ClusterLabel), BaseResidual.data());
+                                PQ->compute_code(BaseResidual.data(), BaseCodeSubset[ClusterLabel].data() + j * PQ->code_size);
+                                PQ->decode(BaseCodeSubset[ClusterLabel].data() + j * PQ->code_size, RecoverResidual.data());
+                                std::vector<float> RecoverVector(Dimension);
+                                faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, HNSWGraph->getDataByInternalId(ClusterLabel), RecoverVector.data());
+                                BaseRecoverNormSubset[ClusterLabel][j] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
+
+                                //std::cout << faiss::fvec_norm_L2sqr(BaseResidual.data(), Dimension) << " " << faiss::fvec_norm_L2sqr(RecoverResidual.data(), Dimension) << " " << faiss::fvec_L2sqr(BaseResidual.data(), RecoverResidual.data(), Dimension) << " | "; 
+                                BaseInput.close();
+                            }
+                            std::cout << QueryIdx << " " << i << " " << ClusterSize << "\n";
+                            if (EndIndice == ClusterSize){FlagContinue = false;}
+                            StartIndice = EndIndice;
+                            EndIndice = EndIndice + nt <= ClusterSize ? EndIndice + nt : ClusterSize;
                         }
                     }
                 }
