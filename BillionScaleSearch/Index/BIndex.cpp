@@ -454,7 +454,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
-            exit(0);
+            
 
             size_t NumLoadCluster = 0;
             TRecorder.reset();
