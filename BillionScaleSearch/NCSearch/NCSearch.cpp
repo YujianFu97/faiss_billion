@@ -1185,9 +1185,9 @@ std::string PathTrainsetLabel, size_t Dimension, size_t TrainSize, float TargetR
 // Input parameters: (1) scalar value (2) data vector (3) path (4) point, data structure
 std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt,
-    float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, 
+    float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, uint32_t * Base_ID_seq,
     std::string Path_base, 
-    std::ofstream & RecordFile, hnswlib::HierarchicalNSW * CentroidHNSW, faiss::ProductQuantizer * PQ, std::vector<std::vector<uint32_t>> & BaseIds)
+    std::ofstream & RecordFile, hnswlib::HierarchicalNSW * HNSWGraph, faiss::ProductQuantizer * PQ, std::vector<std::vector<uint32_t>> & BaseIds)
 {
 
     time_recorder TRecorder = time_recorder();
@@ -1213,6 +1213,9 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     bool ValidResult = false;
     float MinimumCoef = 0.95;
     size_t MaxRepeatTimes = 3;
+    const size_t Assignment_num_batch = 20;
+    const size_t Assignment_batch_size = nb / Assignment_num_batch;
+
     while(!ValidResult){
         size_t ClusterNum = size_t(MaxCandidateSize / (2 * (nb / nc)));
         size_t ClusterBatch = std::ceil(float(ClusterNum) / 10);
@@ -1220,7 +1223,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         std::vector<float> CanLengthList;
         std::vector<float> CenSearchTime;
         std::vector<float> VecSearchTime;
-
 
 
         bool AchieveTargetRecall = true;
@@ -1243,7 +1245,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             std::vector<uint32_t> QueryLabel(nq * ClusterNum);
             TRecorder.reset();
             for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
-                auto result = CentroidHNSW->searchBaseLayer(QuerySet + QueryIdx * Dimension, ClusterNum);
+                auto result = HNSWGraph->searchBaseLayer(QuerySet + QueryIdx * Dimension, ClusterNum);
                 for (size_t i = 0; i < ClusterNum; i++){
                     QueryLabel[QueryIdx * (ClusterNum) +  ClusterNum - i - 1] = result.top().second;
                     QueryDist[QueryIdx * (ClusterNum) +  ClusterNum - i - 1] = result.top().first;
@@ -1254,8 +1256,40 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
 
-            size_t NumLoadCluster = 0;
             TRecorder.reset();
+            std::ifstream BaseInput(Path_base, std::ios::binary);
+            std::vector<float> Base_batch(Assignment_batch_size * Dimension);
+            for (size_t i = 0; i < Assignment_num_batch; i++){
+                readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
+                TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
+#pragma omp parallel for
+                for (size_t j = 0; j < Assignment_batch_size; j++){
+                    uint32_t ClusterLabel = Base_ID_seq[i * Assignment_batch_size + j];
+                    if (QuantizeLabel[ClusterLabel]){
+                        uint32_t ClusterInnerIdx = 0;
+                        while (BaseIds[ClusterLabel][ClusterInnerIdx] != i * Assignment_batch_size + j && ClusterInnerIdx < BaseIds[ClusterLabel].size())
+                        {
+                            ClusterInnerIdx ++;
+                        }
+                        assert(ClusterInnerIdx < BaseIds[ClusterLabel].size());
+
+                        std::vector<float> BaseResidual(Dimension);
+                        std::vector<float> RecoverResidual(Dimension);
+                        std::vector<float> RecoverVector(Dimension);
+                        faiss::fvec_madd(Dimension, Base_batch.data() + j * Dimension, -1.0,  HNSWGraph->getDataByInternalId(ClusterLabel), BaseResidual.data());
+
+                        PQ->compute_code(BaseResidual.data(), BaseCodeSubset[ClusterLabel].data() + ClusterInnerIdx * PQ->code_size);
+                        PQ->decode(BaseCodeSubset[ClusterLabel].data() + ClusterInnerIdx * PQ->code_size, RecoverResidual.data());
+                        faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, HNSWGraph->getDataByInternalId(ClusterLabel), RecoverVector.data());
+                        BaseRecoverNormSubset[ClusterLabel][ClusterInnerIdx] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
+                    }
+                }
+                TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
+            }
+            BaseInput.close();
+
+/*
+            size_t NumLoadCluster = 0;
             // Load and quantize the vectors to be visited
             for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
                 // Do parallel for the search result of one query, as there will be no repeat
@@ -1278,11 +1312,11 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                             readXvecFvec<DataType>(BaseInput, BaseVector.data(), Dimension, 1);
                             std::vector<float> BaseResidual(Dimension);
                             std::vector<float> RecoverResidual(Dimension);
-                            faiss::fvec_madd(Dimension, BaseVector.data(), -1.0,  CentroidHNSW->getDataByInternalId(ClusterLabel), BaseResidual.data());
+                            faiss::fvec_madd(Dimension, BaseVector.data(), -1.0,  HNSWGraph->getDataByInternalId(ClusterLabel), BaseResidual.data());
                             PQ->compute_code(BaseResidual.data(), BaseCodeSubset[ClusterLabel].data() + j * PQ->code_size);
                             PQ->decode(BaseCodeSubset[ClusterLabel].data() + j * PQ->code_size, RecoverResidual.data());
                             std::vector<float> RecoverVector(Dimension);
-                            faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, CentroidHNSW->getDataByInternalId(ClusterLabel), RecoverVector.data());
+                            faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, HNSWGraph->getDataByInternalId(ClusterLabel), RecoverVector.data());
                             BaseRecoverNormSubset[ClusterLabel][j] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
 
                             //std::cout << faiss::fvec_norm_L2sqr(BaseResidual.data(), Dimension) << " " << faiss::fvec_norm_L2sqr(RecoverResidual.data(), Dimension) << " " << faiss::fvec_L2sqr(BaseResidual.data(), RecoverResidual.data(), Dimension) << " | "; 
@@ -1292,7 +1326,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                 }
             }
             TRecorder.print_time_usage("Load and quantize the base vectors in |" + std::to_string(NumLoadCluster) + "| clusters ");
-
+*/
             //std::cout << "2: \n";
 
             // Prepare the PQ table for queries

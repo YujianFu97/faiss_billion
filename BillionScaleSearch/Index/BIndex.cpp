@@ -255,12 +255,8 @@ uint32_t BIndex::LearnCentroidsINI(
         BaseIDSeqINput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
         BaseIDSeqINput.close();
         std::cout << "The 10 base IDs in the top and the end:\n";
-        for (size_t i = 0; i < 10; i++){
-            std::cout << Base_ID_seq[i] << " ";
-        }
-        for (size_t i = 0; i < 10; i++){
-            std::cout << Base_ID_seq[nb - 10 + i] << " ";
-        }
+        for (size_t i = 0; i < 10; i++){std::cout << Base_ID_seq[i] << " ";}
+        for (size_t i = 0; i < 10; i++){std::cout << Base_ID_seq[nb - 10 + i] << " ";}
         std::cout << "\n";
     }
     else{
@@ -284,10 +280,7 @@ uint32_t BIndex::LearnCentroidsINI(
         BaseIds[Base_ID_seq[i]].emplace_back(i);
     }
     std::cout << "The top 10 cluster size: \n";
-    for (size_t i = 0; i < 10; i++){
-        std::cout << BaseIds[i].size() << " ";
-    }
-    std::cout << "\n";
+    for (size_t i = 0; i < 10; i++){std::cout << BaseIds[i].size() << " ";} std::cout << "\n";
     Trecorder.print_record_time_usage(RecordFile, "Transform the base vector ID to inverted index type");
 
     // 4. Load the query and groundtruth of the queries on baseset for recall check
@@ -305,7 +298,6 @@ uint32_t BIndex::LearnCentroidsINI(
     faiss::rand_perm(RandomId.data(), nb, 1234+1);
     std::vector<float> SubResidual(PQ_TrainSize * Dimension, 0);
     std::vector<float> TrainSet(PQ_TrainSize * Dimension);
-
 
     BaseInput.open(Path_base, std::ios::binary);
     for (size_t i =0; i < PQ_TrainSize; i++){
@@ -388,14 +380,13 @@ uint32_t BIndex::LearnCentroidsINI(
 
 
 
-
+/*
     time_recorder TRecorder = time_recorder();
     // Accumulate the vector quantization in the clusters to be visited by the queries
     std::cout << "Check the recall performance on different num clusters to be visited\n";
     std::vector<bool> QuantizeLabel(nc, false);
     std::vector<std::vector<uint8_t>> BaseCodeSubset(nc);
     std::vector<std::vector<float>> BaseRecoverNormSubset(nc);
-    std::vector<std::vector<float>> BaseVectorSubset(nc);
     std::cout << "-2\n";
 
     std::vector<int64_t> ResultID(RecallK * nq, 0);
@@ -433,7 +424,7 @@ uint32_t BIndex::LearnCentroidsINI(
         float PreviousRecordTime1 = 0;
         float PreviousRecordTime3 = 0;
         size_t RepeatTimes = 0;
-        size_t NumLoadCluster = 0;
+
         int nt = omp_get_max_threads();
 
         // Change different ClusterNum
@@ -459,29 +450,6 @@ uint32_t BIndex::LearnCentroidsINI(
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
 
-/*
-            std::ifstream BaseInput(Path_base, std::ios::binary);
-            for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
-                for(size_t i = 0; i < ClusterNum; i++){
-                    if (!QuantizeLabel[QueryLabel[QueryIdx * ClusterNum + i]]){
-                        NumLoadCluster ++;
-                        uint32_t ClusterLabel = QueryLabel[QueryIdx * ClusterNum + i];
-                        QuantizeLabel[ClusterLabel] = true;
-                        BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
-                        BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
-                        BaseVectorSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * Dimension);
-
-                        for (size_t j  = 0; j < BaseIds[ClusterLabel].size(); j++){
-                            BaseInput.seekg(BaseIds[ClusterLabel][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
-                            readXvecFvec<DataType>(BaseInput, BaseVectorSubset[ClusterLabel].data() + j * Dimension, Dimension, 1);
-                        }
-                    }
-                }
-                TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(NumLoadCluster) + " / " + std::to_string(nc) + " clusters");
-            }
-            std::cout << NumLoadCluster << " clusters in total are seletced to be visited\n";
-            exit(0);
-*/
 
             std::ifstream BaseInput(Path_base, std::ios::binary);
             std::vector<float> Base_batch(Assignment_batch_size * Dimension);
@@ -514,6 +482,7 @@ uint32_t BIndex::LearnCentroidsINI(
                 TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
             }
             BaseInput.close();
+*/
 
 /*
             size_t NumLoadCluster = 0;
@@ -572,21 +541,16 @@ uint32_t BIndex::LearnCentroidsINI(
             BaseInput.close();
             TRecorder.print_time_usage("Load and quantize the base vectors in |" + std::to_string(NumLoadCluster) + "| clusters ");
 */
+
+/*
         }
         exit(0);
     }
-
+*/
         std::cout << "Get into the recall performance estimation process\n";
 
 
-
-
-
-
-
-
-
-        auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, QuerySet.data(), QueryGT.data(), CNorms.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
+        auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, QuerySet.data(), QueryGT.data(), CNorms.data(), Base_ID_seq.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
 
         delete PQ;
         Trecorder.print_record_time_usage(RecordFile, "Update the search recall performance");

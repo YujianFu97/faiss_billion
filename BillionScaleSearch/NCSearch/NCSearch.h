@@ -24,7 +24,7 @@ std::string PathTrainsetLabel, size_t Dimension, size_t TrainSize, float TargetR
 
 std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt,
-    float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, 
+    float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, uint32_t * Base_ID_seq,
     std::string Path_base, 
     std::ofstream & RecordFile, hnswlib::HierarchicalNSW * CentroidHNSW, faiss::ProductQuantizer * PQ, std::vector<std::vector<uint32_t>> & BaseIds);
 
