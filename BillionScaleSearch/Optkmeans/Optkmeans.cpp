@@ -496,15 +496,18 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
                 float CPDist = SqrtCPDist * SqrtCPDist;
                 float VPDist = NeighborClusterDist[VectorGt[i * RecallK + j] * NeighborNum];
                 float NSDist = SqrtCPDist / 2 - (VPDist + CPDist - VCDist) / (2 * SqrtCPDist);
+
+                auto result = BoundaryConflictMap.find(std::make_pair(TargetClusterID, NNClusterID));
+                if (result != BoundaryConflictMap.end()){
+                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].first ++;
+                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second = BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second > NSDist ? BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second : NSDist;
+                }
+                else{
+                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)] = std::make_pair(1, NSDist);
+                }
             }
         }
     }
-
-
-
-
-
-
 }
 
 

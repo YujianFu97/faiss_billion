@@ -459,6 +459,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
             size_t NumLoadCluster = 0;
             TRecorder.reset();
+            std::ifstream BaseInput(Path_base, std::ios::binary);
             // Load and quantize the vectors to be visited
             for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
                 // Do parallel for the search result of one query, as there will be no repeat
@@ -478,12 +479,12 @@ uint32_t BIndex::LearnCentroidsINI(
                         size_t StartIndice = 0;
                         size_t EndIndice = StartIndice + (nt < ClusterSize ? nt : ClusterSize);
                         bool FlagContinue = true;
-                        std::cout << nq << " " << QueryIdx << " " << i << " " << ClusterSize << " " << TRecorder.getTimeConsumption() / 1000000 << "\n";
+                        std::cout << nq << " " << QueryIdx << " " << i << " " << ClusterSize << " " << NumLoadCluster << " " << TRecorder.getTimeConsumption() / 1000000 << "\n";
 
                         while(FlagContinue){
-#pragma omp parallel for
+//#pragma omp parallel for
                             for (size_t j = StartIndice; j < EndIndice; j++){
-                                std::ifstream BaseInput(Path_base, std::ios::binary);
+                                
                                 std::vector<float> BaseVector(Dimension);
                                 BaseInput.seekg(BaseIds[ClusterLabel][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
 
@@ -498,7 +499,7 @@ uint32_t BIndex::LearnCentroidsINI(
                                 BaseRecoverNormSubset[ClusterLabel][j] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
 
                                 //std::cout << faiss::fvec_norm_L2sqr(BaseResidual.data(), Dimension) << " " << faiss::fvec_norm_L2sqr(RecoverResidual.data(), Dimension) << " " << faiss::fvec_L2sqr(BaseResidual.data(), RecoverResidual.data(), Dimension) << " | "; 
-                                BaseInput.close();
+                                
                             }
                             std::cout << StartIndice << " " << EndIndice << "\n";
                             if (EndIndice == ClusterSize){FlagContinue = false;}
@@ -508,6 +509,7 @@ uint32_t BIndex::LearnCentroidsINI(
                     }
                 }
             }
+            BaseInput.close();
             TRecorder.print_time_usage("Load and quantize the base vectors in |" + std::to_string(NumLoadCluster) + "| clusters ");
         }
         exit(0);
