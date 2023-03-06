@@ -381,9 +381,131 @@ uint32_t BIndex::LearnCentroidsINI(
         Trecorder.print_record_time_usage(RecordFile, "Train the PQ quantizer");
 
         // 2. Update the search performance
+
+
+
+
+    time_recorder TRecorder = time_recorder();
+    // Accumulate the vector quantization in the clusters to be visited by the queries
+    std::cout << "Check the recall performance on different num clusters to be visited\n";
+    std::vector<bool> QuantizeLabel(nc, false);
+    std::vector<std::vector<uint8_t>> BaseCodeSubset(nc);
+    std::vector<std::vector<float>> BaseRecoverNormSubset(nc);
+    std::cout << "-2\n";
+
+    std::vector<int64_t> ResultID(RecallK * nq, 0);
+    std::vector<float> ResultDist(RecallK * nq, 0);
+
+    std::vector<std::unordered_set<uint32_t>> GtSets(nq);
+    for (size_t i = 0; i < nq; i++){
+        for (size_t j = 0; j < RecallK; j++){
+            GtSets[i].insert(QueryGT[ngt * i + j]);
+        }
+    }
+    std::cout << "-1\n";
+
+    bool ValidResult = false;
+    float MinimumCoef = 0.95;
+    size_t MaxRepeatTimes = 3;
+    while(!ValidResult){
+        size_t ClusterNum = size_t(MaxCandidateSize / (2 * (nb / nc)));
+        size_t ClusterBatch = std::ceil(float(ClusterNum) / 10);
+        std::vector<float> ClusterNumList;
+        std::vector<float> CanLengthList;
+        std::vector<float> CenSearchTime;
+        std::vector<float> VecSearchTime;
+
+
+
+        bool AchieveTargetRecall = true;
+        bool UpdateClusterNum = true;
+        bool IncreaseClusterNum = false;
+        bool DecreaseClusterNum = false;
+        float ResultIndice = -1;
+        float VisitedVec = 0;
+        size_t PreviousClusterNum = ClusterNum;
+        float PreviousRecordTime1 = 0;
+        float PreviousRecordTime3 = 0;
+        size_t RepeatTimes = 0;
+
+        // Change different ClusterNum
+        while (UpdateClusterNum)
+        {
+            // Record the time of graph search on centroids
+            std::cout << "0: \n";
+            std::vector<float> QueryDist(nq * ClusterNum);
+            std::vector<uint32_t> QueryLabel(nq * ClusterNum);
+            TRecorder.reset();
+            for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
+                auto result = CentroidHNSW->searchBaseLayer(QuerySet.data() + QueryIdx * Dimension, ClusterNum);
+                for (size_t i = 0; i < ClusterNum; i++){
+                    QueryLabel[QueryIdx * (ClusterNum) +  ClusterNum - i - 1] = result.top().second;
+                    QueryDist[QueryIdx * (ClusterNum) +  ClusterNum - i - 1] = result.top().first;
+                    result.pop();
+                }
+            }
+
+            TRecorder.recordTimeConsumption1();
+            std::cout << "1: \n";
+
+            size_t NumLoadCluster = 0;
+            TRecorder.reset();
+            // Load and quantize the vectors to be visited
+            for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
+                // Do parallel for the search result of one query, as there will be no repeat
+
+                for (size_t i = 0; i < ClusterNum; i++){
+                    if (!QuantizeLabel[QueryLabel[QueryIdx * ClusterNum + i]]){
+                        NumLoadCluster ++;
+                        uint32_t ClusterLabel = QueryLabel[QueryIdx * ClusterNum + i];
+                        // The vectors are not quantized, read and quantize the base vectors
+                        QuantizeLabel[ClusterLabel] = true;
+                        BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
+                        BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
+
+#pragma omp parallel for
+                        for (size_t j = 0; j < BaseIds[ClusterLabel].size(); j++){
+                            std::ifstream BaseInput(Path_base, std::ios::binary);
+                            std::vector<float> BaseVector(Dimension);
+                            BaseInput.seekg(BaseIds[ClusterLabel][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+
+                            readXvecFvec<DataType>(BaseInput, BaseVector.data(), Dimension, 1);
+                            std::vector<float> BaseResidual(Dimension);
+                            std::vector<float> RecoverResidual(Dimension);
+                            faiss::fvec_madd(Dimension, BaseVector.data(), -1.0,  CentroidHNSW->getDataByInternalId(ClusterLabel), BaseResidual.data());
+                            PQ->compute_code(BaseResidual.data(), BaseCodeSubset[ClusterLabel].data() + j * PQ->code_size);
+                            PQ->decode(BaseCodeSubset[ClusterLabel].data() + j * PQ->code_size, RecoverResidual.data());
+                            std::vector<float> RecoverVector(Dimension);
+                            faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, CentroidHNSW->getDataByInternalId(ClusterLabel), RecoverVector.data());
+                            BaseRecoverNormSubset[ClusterLabel][j] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
+
+                            //std::cout << faiss::fvec_norm_L2sqr(BaseResidual.data(), Dimension) << " " << faiss::fvec_norm_L2sqr(RecoverResidual.data(), Dimension) << " " << faiss::fvec_L2sqr(BaseResidual.data(), RecoverResidual.data(), Dimension) << " | "; 
+                            BaseInput.close();
+                        }
+                    }
+                }
+            }
+            TRecorder.print_time_usage("Load and quantize the base vectors in |" + std::to_string(NumLoadCluster) + "| clusters ");
+        }
+        exit(0);
+    }
+
+
+
+
+
         std::cout << "Get into the recall performance estimation process\n";
-        //auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, QuerySet.data(), QueryGT.data(), CNorms.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
-        auto RecallResult = std::make_tuple(0, 1, 1, 1, 1);
+
+
+
+
+
+
+
+
+
+        auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, QuerySet.data(), QueryGT.data(), CNorms.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
+
         delete PQ;
         Trecorder.print_record_time_usage(RecordFile, "Update the search recall performance");
 
