@@ -394,6 +394,7 @@ uint32_t BIndex::LearnCentroidsINI(
     std::vector<bool> QuantizeLabel(nc, false);
     std::vector<std::vector<uint8_t>> BaseCodeSubset(nc);
     std::vector<std::vector<float>> BaseRecoverNormSubset(nc);
+    std::vector<std::vector<float>> BaseVectorSubset(nc);
     std::cout << "-2\n";
 
     std::vector<int64_t> ResultID(RecallK * nq, 0);
@@ -457,6 +458,7 @@ uint32_t BIndex::LearnCentroidsINI(
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
 
+            std::ifstream BaseInput(Path_base, std::ios::binary);
             for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
                 for(size_t i = 0; i < ClusterNum; i++){
                     if (!QuantizeLabel[QueryLabel[QueryIdx * ClusterNum + i]]){
@@ -465,12 +467,20 @@ uint32_t BIndex::LearnCentroidsINI(
                         QuantizeLabel[ClusterLabel] = true;
                         BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
                         BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
+                        BaseVectorSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * Dimension);
+
+                        for (size_t j  = 0; j < BaseIds[ClusterLabel].size(); j++){
+                            BaseInput.seekg(BaseIds[ClusterLabel][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+                            readXvecFvec<DataType>(BaseInput, BaseVectorSubset[ClusterLabel].data() + j * Dimension, Dimension, 1);
+                        }
                     }
                 }
+                TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(NumLoadCluster) + " / " + std::to_string(nc) + " clusters");
             }
             std::cout << NumLoadCluster << " clusters in total are seletced to be visited\n";
+            exit(0);
 
-            std::ifstream BaseInput(Path_base, std::ios::binary);
+            
             std::vector<float> Base_batch(Assignment_batch_size * Dimension);
             for (size_t i = 0; i < Assignment_num_batch; i++){
                 readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
@@ -500,6 +510,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
                 TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
             }
+            BaseInput.close();
 
 /*
             size_t NumLoadCluster = 0;
@@ -561,10 +572,6 @@ uint32_t BIndex::LearnCentroidsINI(
         }
         exit(0);
     }
-
-
-
-
 
         std::cout << "Get into the recall performance estimation process\n";
 

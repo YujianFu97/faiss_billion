@@ -210,7 +210,8 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
 ){
     // Check the neighbor cluster num of all vectors
     // Result: The value in vectorcostsource: the number of NNs in the target cluster
-    // Initialize the search cost
+    // Initialize the search cost of each train vector
+#pragma omp parallel for
     std::vector<std::unordered_set<uint32_t>> VectorCostSet(TrainSize);
     for (uint32_t i = 0; i < TrainSize; i++){
         FetchSearchCost(i, NeighborNum, RecallK, VectorGt + i * RecallK, AssignmentID, NeighborClusterID, VectorCostSet[i]);
@@ -248,7 +249,7 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
             for (size_t temp0 = 0; temp0 < NNRNNNum; temp0++){
 
                 uint32_t NNRNN = TrainBeNNs[NN][temp0];
-                FetchSearchCost(NNRNN, NeighborNum, RecallK, VectorGt, AssignmentID, NeighborClusterID, VectorShiftCostSet[temp0]);
+                FetchSearchCost(NNRNN, NeighborNum, RecallK, VectorGt + NNRNN * RecallK, AssignmentID, NeighborClusterID, VectorShiftCostSet[temp0]);
 
                 for (auto it = VectorShiftCostSet[temp0].begin(); it != VectorShiftCostSet[temp0].end(); it++){
                     ShiftVectorCost += ClusterSize[*it];
@@ -283,6 +284,7 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
         }
     }
 }
+
 float updatecentroids(size_t nc, size_t Dimension, size_t TrainSize, size_t NeighborSize,
     float * TrainSet, uint32_t * AssignmentID, float * Centroids, float * cluster_size){
     // Update the centroids
@@ -341,7 +343,7 @@ float updatecentroids(size_t nc, size_t Dimension, size_t TrainSize, size_t Neig
 }
 
 // Kmeans training with neighbor info for optimization
-float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
+std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
             float * Centroids, bool verbose, bool Initialized, bool Optimize, 
             float lambda, size_t OptSize, bool UseGraph, bool  addi_func, 
             bool  control_start, size_t iterations, bool keeptrainlabels, 
@@ -359,15 +361,9 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
         exit(0);}
     if (TrainSize == nc) {
         if (verbose) { printf("Number of training points (%ld) same as number of "
-                       "clusters, just copying\n", TrainSize);}
-        memcpy(Centroids, TrainSet, Dimension * nc * sizeof(float));
-        if (keeptrainlabels){
-            for (size_t i = 0; i < nc; i++){
-                trainlabels[i] = i;
-                traindists[i] = EPS;
-            }
-        }
-        return 0;}
+                       "clusters, please provide more points than number of clusters\n", TrainSize);}
+        exit(0);
+    }
 
     if (verbose) printf("Clustering %ld points in %ldD to %ld clusters, nt / nc = %ld, redo  %ld iterations\n", 
                         size_t(TrainSize), Dimension, nc, size_t(TrainSize / nc), iterations);
@@ -482,7 +478,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
                     SqrtCPDist = sqrt(faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, Centroids + NNClusterID * Dimension, Dimension));
                 }
 
-                
+                // Get the distance between the conflict NNs and the mid line between two clusters
                 float VCDist = -1;
                 for (size_t temp0; temp0 < NeighborNum; temp0++){
                     if (NeighborClusterID[VectorGt[i * RecallK + j] * NeighborNum + temp0] == TargetClusterID){
@@ -508,6 +504,7 @@ float neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_
             }
         }
     }
+    return BoundaryConflictMap;
 }
 
 

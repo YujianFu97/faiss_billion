@@ -56,7 +56,7 @@ void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, si
 
 //float sc_eval(idx_t * assign_id, idx_t * neighbor_id, size_t * cluster_size, size_t neighbor_size, size_t neighbor_test_size, size_t nb, size_t nc);
 
-float neighborkmeans(float * Trainset, size_t Dimension, size_t Trainsize, size_t nc,  float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
+std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans(float * Trainset, size_t Dimension, size_t Trainsize, size_t nc,  float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
             float * Centroids, bool Verbose, bool Initialized, bool Optimize, 
             float lambda = 50, size_t OptSize = 10, bool UseGraph = false, bool  addi_func = true, 
             bool  control_start = false, size_t iterations = 30, bool keeptrainlabels= false, 
