@@ -304,12 +304,15 @@ uint32_t BIndex::LearnCentroidsINI(
     faiss::rand_perm(RandomId.data(), nb, 1234+1);
     std::vector<float> SubResidual(PQ_TrainSize * Dimension, 0);
     std::vector<float> TrainSet(PQ_TrainSize * Dimension);
-    BaseInput.open(Path_base, std::ios::binary);
+
+#pragma omp parallel for
     for (size_t i =0; i < PQ_TrainSize; i++){
+        BaseInput.open(Path_base, std::ios::binary);
         BaseInput.seekg(RandomId[i] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
         readXvecFvec<DataType>(BaseInput, TrainSet.data() + i * Dimension, Dimension, 1);
+        BaseInput.close();
     }
-    BaseInput.close();
+    
     Trecorder.print_record_time_usage(RecordFile, "Load the subtrainset for PQ training");
 
     // 6. Build the inverted index for base vectors
@@ -407,6 +410,7 @@ uint32_t BIndex::LearnCentroidsINI(
     bool ValidResult = false;
     float MinimumCoef = 0.95;
     size_t MaxRepeatTimes = 3;
+    exit(0);
     while(!ValidResult){
         size_t ClusterNum = size_t(MaxCandidateSize / (2 * (nb / nc)));
         size_t ClusterBatch = std::ceil(float(ClusterNum) / 10);
