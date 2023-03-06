@@ -431,6 +431,7 @@ uint32_t BIndex::LearnCentroidsINI(
         float PreviousRecordTime1 = 0;
         float PreviousRecordTime3 = 0;
         size_t RepeatTimes = 0;
+        size_t NumLoadCluster = 0;
         int nt = omp_get_max_threads();
 
         // Change different ClusterNum
@@ -459,6 +460,7 @@ uint32_t BIndex::LearnCentroidsINI(
             for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
                 for(size_t i = 0; i < ClusterNum; i++){
                     if (!QuantizeLabel[QueryLabel[QueryIdx * ClusterNum + i]]){
+                        NumLoadCluster ++;
                         uint32_t ClusterLabel = QueryLabel[QueryIdx * ClusterNum + i];
                         QuantizeLabel[ClusterLabel] = true;
                         BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
@@ -466,6 +468,7 @@ uint32_t BIndex::LearnCentroidsINI(
                     }
                 }
             }
+            std::cout << NumLoadCluster << " clusters in total are seletced to be visited\n";
 
             std::ifstream BaseInput(Path_base, std::ios::binary);
             std::vector<float> Base_batch(Assignment_batch_size * Dimension);
