@@ -458,6 +458,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
             size_t NumLoadCluster = 0;
             TRecorder.reset();
+            exit(0);
             // Load and quantize the vectors to be visited
             for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
                 // Do parallel for the search result of one query, as there will be no repeat
