@@ -410,7 +410,7 @@ uint32_t BIndex::LearnCentroidsINI(
     bool ValidResult = false;
     float MinimumCoef = 0.95;
     size_t MaxRepeatTimes = 3;
-    exit(0);
+    
     while(!ValidResult){
         size_t ClusterNum = size_t(MaxCandidateSize / (2 * (nb / nc)));
         size_t ClusterBatch = std::ceil(float(ClusterNum) / 10);
@@ -433,6 +433,7 @@ uint32_t BIndex::LearnCentroidsINI(
         size_t RepeatTimes = 0;
 
         // Change different ClusterNum
+        
         while (UpdateClusterNum)
         {
             // Record the time of graph search on centroids
@@ -451,6 +452,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
+            exit(0);
 
             size_t NumLoadCluster = 0;
             TRecorder.reset();
