@@ -456,7 +456,49 @@ uint32_t BIndex::LearnCentroidsINI(
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
 
+            for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
+                for(size_t i = 0; i < ClusterNum; i++){
+                    if (!QuantizeLabel[QueryLabel[QueryIdx * ClusterNum + i]]){
+                        uint32_t ClusterLabel = QueryLabel[QueryIdx * ClusterNum + i];
+                        QuantizeLabel[ClusterLabel] = true;
+                        BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
+                        BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
+                    }
+                }
+            }
 
+            std::ifstream BaseInput(Path_base, std::ios::binary);
+            std::vector<float> Base_batch(Assignment_batch_size * Dimension);
+            for (size_t i = 0; i < Assignment_num_batch; i++){
+                readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
+                TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
+#pragma omp parallel for
+                for (size_t j = 0; j < Assignment_batch_size; j++){
+                    uint32_t ClusterLabel = Base_ID_seq[i * Assignment_batch_size + j];
+                    if (QuantizeLabel[ClusterLabel]){
+                        uint32_t ClusterInnerIdx = 0;
+                        while (BaseIds[ClusterLabel][ClusterInnerIdx] != i * Assignment_batch_size + j && ClusterInnerIdx < BaseIds[ClusterLabel].size())
+                        {
+                            ClusterInnerIdx ++;
+                        }
+                        assert(ClusterInnerIdx < BaseIds[ClusterLabel].size());
+
+                        std::vector<float> BaseResidual(Dimension);
+                        std::vector<float> RecoverResidual(Dimension);
+                        std::vector<float> RecoverVector(Dimension);
+                        faiss::fvec_madd(Dimension, Base_batch.data() + j * Dimension, -1.0,  HNSWGraph->getDataByInternalId(ClusterLabel), BaseResidual.data());
+
+                        PQ->compute_code(BaseResidual.data(), BaseCodeSubset[ClusterLabel].data() + ClusterInnerIdx * PQ->code_size);
+                        PQ->decode(BaseCodeSubset[ClusterLabel].data() + ClusterInnerIdx * PQ->code_size, RecoverResidual.data());
+                        faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, HNSWGraph->getDataByInternalId(ClusterLabel), RecoverVector.data());
+                        BaseRecoverNormSubset[ClusterLabel][ClusterInnerIdx] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
+                    }
+                }
+
+                TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
+            }
+
+/*
             size_t NumLoadCluster = 0;
             TRecorder.reset();
             std::ifstream BaseInput(Path_base, std::ios::binary);
@@ -473,7 +515,7 @@ uint32_t BIndex::LearnCentroidsINI(
                         BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
                         BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
 
-                        
+
                         size_t ClusterSize = BaseIds[ClusterLabel].size();
 
                         size_t StartIndice = 0;
@@ -509,8 +551,10 @@ uint32_t BIndex::LearnCentroidsINI(
                     }
                 }
             }
+
             BaseInput.close();
             TRecorder.print_time_usage("Load and quantize the base vectors in |" + std::to_string(NumLoadCluster) + "| clusters ");
+*/
         }
         exit(0);
     }
