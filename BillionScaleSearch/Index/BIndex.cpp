@@ -275,7 +275,7 @@ uint32_t BIndex::LearnCentroidsINI(
         BaseIDSeqOutput.close();
         std::cout << "Save vector ID in seq index to " << Path_ID_seq << "\n";
     }
-    Trecorder.print_record_time_usage(RecordFile, "Merge and load base ID to index")
+    Trecorder.print_record_time_usage(RecordFile, "Merge and load base ID to index");
 
     // 3.3 Save the ID to inverted format
     BaseIds.resize(nc); 
