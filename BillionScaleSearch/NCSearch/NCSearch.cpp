@@ -1274,8 +1274,11 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
 
             for (size_t i = 0; i < Assignment_num_batch; i++){
                 TRecorder.reset();
+                uint32_t Dim = 0;
                 for (size_t temp = 0; temp < Assignment_batch_size; temp++){
-                    size_t SuccessItems = fread(Base_batch.data() + i * Dimension, sizeof(DataType), Dimension, fBaseInput);
+                    size_t SuccessItems = fread((char *) & Dim, sizeof(uint32_t), 1, fBaseInput);
+                    assert(Dim == Dimension);
+                    SuccessItems = fread(Base_batch.data() + i * Dimension, sizeof(DataType), Dimension, fBaseInput);
                     assert(SuccessItems == Dimension);
                 }
 
