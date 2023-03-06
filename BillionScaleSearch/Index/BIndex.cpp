@@ -436,6 +436,7 @@ uint32_t BIndex::LearnCentroidsINI(
         
         while (UpdateClusterNum)
         {
+            exit(0);
             // Record the time of graph search on centroids
             std::cout << "0: \n";
             std::vector<float> QueryDist(nq * ClusterNum);
@@ -452,7 +453,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
-            exit(0);
+            
 
             size_t NumLoadCluster = 0;
             TRecorder.reset();
