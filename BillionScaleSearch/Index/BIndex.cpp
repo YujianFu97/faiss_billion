@@ -275,6 +275,7 @@ uint32_t BIndex::LearnCentroidsINI(
         BaseIDSeqOutput.close();
         std::cout << "Save vector ID in seq index to " << Path_ID_seq << "\n";
     }
+    Trecorder.print_record_time_usage(RecordFile, "Merge and load base ID to index")
 
     // 3.3 Save the ID to inverted format
     BaseIds.resize(nc); 
@@ -287,7 +288,7 @@ uint32_t BIndex::LearnCentroidsINI(
         std::cout << BaseIds[i].size() << " ";
     }
     std::cout << "\n";
-    Trecorder.print_record_time_usage(RecordFile, "Load base ID to index and merge the ID");
+    Trecorder.print_record_time_usage(RecordFile, "Transform the base vector ID to inverted index type");
 
     // 4. Load the query and groundtruth of the queries on baseset for recall check
     std::ifstream GTInput(Path_GT, std::ios::binary);
@@ -458,6 +459,7 @@ uint32_t BIndex::LearnCentroidsINI(
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
 
+/*
             std::ifstream BaseInput(Path_base, std::ios::binary);
             for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
                 for(size_t i = 0; i < ClusterNum; i++){
@@ -479,8 +481,9 @@ uint32_t BIndex::LearnCentroidsINI(
             }
             std::cout << NumLoadCluster << " clusters in total are seletced to be visited\n";
             exit(0);
+*/
 
-            
+            std::ifstream BaseInput(Path_base, std::ios::binary);
             std::vector<float> Base_batch(Assignment_batch_size * Dimension);
             for (size_t i = 0; i < Assignment_num_batch; i++){
                 readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);

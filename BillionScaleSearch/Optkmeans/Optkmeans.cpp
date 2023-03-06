@@ -242,7 +242,7 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
             // Shift the NN id to the original vector ID
             uint32_t OriginID = AssignmentID[NN];
             AssignmentID[NN] = AssignmentID[i];
-            ClusterSize[i * NeighborNum]--; ClusterSize[NN * NeighborNum]++;
+            ClusterSize[OriginID]--; ClusterSize[AssignmentID[i]]++;
 
             // Check the shift cost, can the shift reduce the search cost?
             std::vector<std::unordered_set<uint32_t>> VectorShiftCostSet(NNRNNNum);
@@ -264,6 +264,7 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
             }
             else{
                 // Need to define the loss function, if the loss decrease, then do the shift, else we recover the assignment
+                // We use a parameter *prop* to decide the relative importance between distance and the search cost, the larger prop means we consider more on the
                 float OriginalNNDist = NeighborClusterDist[NN * NeighborNum];
                 float ShiftNNDist = faiss::fvec_L2sqr(TrainSet + NN * Dimension, Centroids +  AssignmentID[i] * Dimension, Dimension);
                 // The smaller prop means more shift cases
@@ -280,7 +281,7 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
             }
             else{
                 AssignmentID[NN] = OriginID;
-                ClusterSize[i * NeighborNum]++; ClusterSize[NN * NeighborNum]--;
+                ClusterSize[AssignmentID[i]]++; ClusterSize[OriginID]--;
             }
         }
     }
