@@ -500,7 +500,7 @@ uint32_t BIndex::LearnCentroidsINI(
                                 //std::cout << faiss::fvec_norm_L2sqr(BaseResidual.data(), Dimension) << " " << faiss::fvec_norm_L2sqr(RecoverResidual.data(), Dimension) << " " << faiss::fvec_L2sqr(BaseResidual.data(), RecoverResidual.data(), Dimension) << " | "; 
                                 BaseInput.close();
                             }
-                            std::cout << QueryIdx << " " << i << " " << ClusterSize << "\n";
+                            std::cout << nq << " " << QueryIdx << " " << i << " " << ClusterSize << "\n";
                             if (EndIndice == ClusterSize){FlagContinue = false;}
                             StartIndice = EndIndice;
                             EndIndice = EndIndice + nt <= ClusterSize ? EndIndice + nt : ClusterSize;
