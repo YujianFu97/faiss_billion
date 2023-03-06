@@ -188,7 +188,7 @@ void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, si
 }
 
 // Get the minimum search cost that can visit all of the neighbor groundtruth 
-float FetchSearchCost(uint32_t VectorID, size_t NeighborNum, size_t RecallK, int64_t * VectorGt, 
+void FetchSearchCost(uint32_t VectorID, size_t NeighborNum, size_t RecallK, int64_t * VectorGt, 
 uint32_t * AssignmentID, uint32_t * NeighborClusterID, std::unordered_set<uint32_t> & ClusterID){
     for (size_t i = 0; i < RecallK; i++){
         uint32_t NN = VectorGt[i];
@@ -229,7 +229,6 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
                 continue;
             }
             // Check the origin cost
-            uint32_t OriginNNID = AssignmentID[NN];
             size_t NNRNNNum = TrainBeNNs[NN].size(); // This is the number of vectors that take NN as its K nearest neighbors
             size_t OriginalClusterCost = 0;  // This is the search cost that is related to the NN vector
             for (size_t temp0 = 0; temp0 < NNRNNNum; temp0++){
@@ -287,10 +286,10 @@ float neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t D
     }
 }
 
-float updatecentroids(size_t nc, size_t Dimension, size_t TrainSize, size_t NeighborSize,
+void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize, size_t NeighborSize,
     float * TrainSet, uint32_t * AssignmentID, float * Centroids, float * cluster_size){
     // Update the centroids
-    
+
     std::fill(Centroids, Centroids + nc*Dimension, 0);
 
     //std::cout << "Update the cluster centroids\n";

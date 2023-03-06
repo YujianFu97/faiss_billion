@@ -1224,7 +1224,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         std::vector<float> CenSearchTime;
         std::vector<float> VecSearchTime;
 
-
         bool AchieveTargetRecall = true;
         bool UpdateClusterNum = true;
         bool IncreaseClusterNum = false;
@@ -1268,12 +1267,17 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             }
             std::cout << "Search " << NumLoadCluster << " / " << nc << " clusters in the index for evaluation\n";
 
-            TRecorder.reset();
             std::ifstream BaseInput(Path_base, std::ios::binary);
             std::vector<float> Base_batch(Assignment_batch_size * Dimension);
+
+            FILE * fBaseInput = fopen(Path_base.c_str(), "rb+");
+            
             for (size_t i = 0; i < Assignment_num_batch; i++){
-                readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
-                TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
+                TRecorder.reset();
+                fread(Base_batch.data(), sizeof(float), Assignment_batch_size, fBaseInput);
+                TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch with fread");
+                readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
+                TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
 #pragma omp parallel for
                 for (size_t j = 0; j < Assignment_batch_size; j++){
                     uint32_t ClusterLabel = Base_ID_seq[i * Assignment_batch_size + j];
@@ -1296,7 +1300,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                         BaseRecoverNormSubset[ClusterLabel][ClusterInnerIdx] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
                     }
                 }
-                TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
+                TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
             }
             BaseInput.close();
 
