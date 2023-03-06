@@ -21,6 +21,6 @@ int main(){
     std::ifstream TrainInput(PathLearn, std::ios::binary);
     readXvec<float>(TrainInput, TrainSet.data(), Dimension, nt, true, true);
 
-    auto result = neighborkmeans(TrainSet.data(), Dimension, nt, nc, prop, Nlevel, 10, ClusterBoundSize, Centroids.data(), true, false, UseOptimize, Lambda, OptSize, UseGraph);
+    auto result = neighborkmeans(TrainSet.data(), Dimension, nt, nc, prop, Nlevel, 10, ClusterBoundSize, Centroids.data(), Verbose, UseOptimize, Lambda, OptSize, UseGraph);
     
 }

@@ -1280,8 +1280,8 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                 }
 
                 TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch with fread");
-                readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
-                TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
+                //readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
+                //TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
 #pragma omp parallel for
                 for (size_t j = 0; j < Assignment_batch_size; j++){
                     uint32_t ClusterLabel = Base_ID_seq[i * Assignment_batch_size + j];
