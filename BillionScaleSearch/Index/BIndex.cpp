@@ -470,7 +470,7 @@ uint32_t BIndex::LearnCentroidsINI(
             std::ifstream BaseInput(Path_base, std::ios::binary);
             std::vector<float> Base_batch(Assignment_batch_size * Dimension);
             for (size_t i = 0; i < Assignment_num_batch; i++){
-                readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
+                readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
                 TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i) + " / " + std::to_string(Assignment_num_batch) + " batch");
 #pragma omp parallel for
                 for (size_t j = 0; j < Assignment_batch_size; j++){
