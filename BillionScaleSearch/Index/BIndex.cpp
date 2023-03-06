@@ -299,12 +299,17 @@ uint32_t BIndex::LearnCentroidsINI(
     std::vector<float> SubResidual(PQ_TrainSize * Dimension, 0);
     std::vector<float> TrainSet(PQ_TrainSize * Dimension);
 
+
+
+    /*
     BaseInput.open(Path_base, std::ios::binary);
     for (size_t i =0; i < PQ_TrainSize; i++){
         BaseInput.seekg(RandomId[i] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
         readXvecFvec<DataType>(BaseInput, TrainSet.data() + i * Dimension, Dimension, 1);
     }
     BaseInput.close();
+    */
+
 
     Trecorder.print_record_time_usage(RecordFile, "Load the subtrainset for PQ training");
 

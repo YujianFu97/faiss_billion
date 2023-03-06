@@ -225,7 +225,7 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
     // Update the vector assignment: complexity: TrainSize * RecallK * NNRNNNum
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
-            std::cout << "Checking " << i << " th vector, the " << j << " th neighbor gt\r";
+            std::cout << "Checking " << i << " th vector, the " << j << " th neighbor gt: " << VectorGt[i * RecallK + j] << "\n";
             uint32_t NN = VectorGt[i * RecallK + j];
             if (AssignmentID[NN] == AssignmentID[i]){ // If the NN id is the same with original id, no need to check the shift
                 continue;
@@ -388,9 +388,16 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     GraphSearch(NeighborClusterID.data(), NeighborClusterDist.data(), TrainSet, Centroids, TrainSize, nc, NeighborNum, Dimension);
     Trecorder.print_time_usage("Search the train vectors for further updates");
 
+
+
     for (size_t i = 0; i < TrainSize; i++){
         TrainIDs[NeighborClusterID[i * NeighborNum]].emplace_back(i);
     }
+
+    for (size_t i = 0; i < NeighborNum; i++){
+        std::cout << NeighborClusterID[13832 * NeighborNum + i] << " " << NeighborClusterDist[13832 * NeighborNum + i] << " " << TrainIDs[NeighborClusterID[13832 * NeighborNum + i]].size() << " | ";
+    }
+    exit(0);
 
     std::vector<float> ClusterSize(nc);
     for (size_t i = 0; i < nc; i++){

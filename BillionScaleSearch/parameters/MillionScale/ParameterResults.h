@@ -10,7 +10,7 @@ const bool UsePS = false;
 
 //For index construction
 size_t CTrainSize = nt;     // Number of vectors used for initialization centroid training
-size_t nc = 30000;
+size_t nc = 1000;
 size_t PQTrainSize = 20000;
 size_t M_PQ =8;
 size_t CodeBits = 8;
