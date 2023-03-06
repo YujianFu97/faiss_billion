@@ -1256,6 +1256,18 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
 
+            size_t NumLoadCluster = 0;
+            for (size_t i = 0; i < nq * ClusterNum; i++){
+                if (!QuantizeLabel[QueryLabel[i]]){
+                    uint32_t ClusterLabel = QueryLabel[i];
+                    QuantizeLabel[ClusterLabel] = true;
+                    BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
+                    BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
+                    NumLoadCluster ++;
+                }
+            }
+            std::cout << "Search " << NumLoadCluster << " / " << nc << " clusters in the index for evaluation\n";
+
             TRecorder.reset();
             std::ifstream BaseInput(Path_base, std::ios::binary);
             std::vector<float> Base_batch(Assignment_batch_size * Dimension);
