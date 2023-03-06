@@ -471,7 +471,8 @@ uint32_t BIndex::LearnCentroidsINI(
                         BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
                         BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
 
-#pragma omp parallel for
+//#pragma omp parallel for
+                        std::cout << QueryIdx << " " << i << " " << BaseIds[ClusterLabel].size() << "\n";
                         for (size_t j = 0; j < BaseIds[ClusterLabel].size(); j++){
                             std::ifstream BaseInput(Path_base, std::ios::binary);
                             std::vector<float> BaseVector(Dimension);
