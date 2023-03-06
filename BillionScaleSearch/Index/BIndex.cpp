@@ -178,10 +178,6 @@ uint32_t BIndex::LearnCentroidsINI(
     uint32_t Assignment_num = 20;
 
     // 1. Initialize the centroids
-    std::vector<float> TrainSet(Dimension * CenTrainSize);
-    std::cout << "Load the train vectors from: " << Path_learn << std::endl;
-    SampleSet<DataType>(TrainSet.data(), Path_learn, CenTrainSize, nt, Dimension);
-    Trecorder.print_record_time_usage(RecordFile, "Sampled subset for training");
 
     std::cout << "Initializing the cluster centroids\n";
     std::vector<float>  Centroids(MaxNC * Dimension);
@@ -192,6 +188,11 @@ uint32_t BIndex::LearnCentroidsINI(
         std::cout << "Load ini pretrained centroids from " << Path_centroid << "\n";
     }
     else{
+        std::vector<float> TrainSet(Dimension * CenTrainSize);
+        std::cout << "Load the train vectors from: " << Path_learn << std::endl;
+        SampleSet<DataType>(TrainSet.data(), Path_learn, CenTrainSize, nt, Dimension);
+        Trecorder.print_record_time_usage(RecordFile, "Sampled subset for training");
+
         hierarkmeans(TrainSet.data(), Dimension, CenTrainSize, nc, Centroids.data(), NLevel, Optimize, true, OptSize, Lambda, 30);
         std::ofstream IniCentroidOutput(Path_centroid, std::ios::binary);
         for (size_t i = 0; i < nc; i++){
@@ -302,7 +303,7 @@ uint32_t BIndex::LearnCentroidsINI(
     std::vector<int> RandomId(nb);
     faiss::rand_perm(RandomId.data(), nb, 1234+1);
     std::vector<float> SubResidual(PQ_TrainSize * Dimension, 0);
-    TrainSet.resize(PQ_TrainSize * Dimension);
+    std::vector<float> TrainSet(PQ_TrainSize * Dimension);
     BaseInput.open(Path_base, std::ios::binary);
     for (size_t i =0; i < PQ_TrainSize; i++){
         BaseInput.seekg(RandomId[i] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);

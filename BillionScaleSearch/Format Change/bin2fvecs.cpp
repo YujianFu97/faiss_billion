@@ -29,7 +29,7 @@ int main(){
     for (size_t i = 0; i < nb; i++){
         Input.read((char *) DataVector.data(), sizeof(DataType) * Dimension);
         Output.write((char *) & Dimension, sizeof(uint32_t));
-        Output.write((char *) DataVector.data(), sizeof(DataType) * Dimension);
+        Output.write((char *) DataVector.data(), sizeof(float) * Dimension);
 
         if (i % 100000 == 0){
             std::cout << "Processing " << i <<  " / " << nb << "\r";
