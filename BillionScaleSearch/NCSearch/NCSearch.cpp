@@ -1216,6 +1216,64 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     const size_t Assignment_num_batch = 20;
     const size_t Assignment_batch_size = nb / Assignment_num_batch;
 
+
+    size_t MaxClusterNum = std::ceil(MaxCandidateSize / (nb / nc));
+    std::vector<float> MaxQueryDist(nq * MaxClusterNum);
+    std::vector<uint32_t> MaxQueryLabel(nq * MaxClusterNum);
+    for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
+        auto result = HNSWGraph->searchBaseLayer(QuerySet + QueryIdx * Dimension, MaxClusterNum);
+        for (size_t i = 0; i < MaxClusterNum; i++){
+            MaxQueryLabel[QueryIdx * MaxClusterNum + MaxClusterNum - i - 1] = result.top().second;
+            MaxQueryLabel[QueryIdx * MaxClusterNum + MaxClusterNum - i - 1] = result.top().first;
+            result.pop();
+        }
+    }
+    
+    size_t NumLoadCluster = 0;
+    for (size_t i  = 0; i < nq * MaxClusterNum; i++){
+        if (!QuantizeLabel[MaxQueryLabel[i]]){
+            uint32_t ClusterLabel = MaxQueryLabel[i];
+            QuantizeLabel[ClusterLabel] = true;
+            BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
+            BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
+            NumLoadCluster ++;
+        }
+    }
+    std::cout << "Search " << NumLoadCluster << " / " << nc << " clusters in the index for evaluation\n";
+    std::ifstream BaseInput(Path_base, std::ios::binary);
+    std::vector<float> Base_batch(Assignment_batch_size * Dimension);
+
+    TRecorder.reset();
+    for (size_t i = 0; i < Assignment_num_batch; i++){
+
+        readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
+        TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
+#pragma omp parallel for
+        for (size_t j = 0; j < Assignment_batch_size; j++){
+            uint32_t ClusterLabel = Base_ID_seq[i * Assignment_batch_size + j];
+            if (QuantizeLabel[ClusterLabel]){
+                uint32_t ClusterInnerIdx = 0;
+                while (BaseIds[ClusterLabel][ClusterInnerIdx] != i * Assignment_batch_size + j && ClusterInnerIdx < BaseIds[ClusterLabel].size())
+                {
+                    ClusterInnerIdx ++;
+                }
+                assert(ClusterInnerIdx < BaseIds[ClusterLabel].size());
+
+                std::vector<float> BaseResidual(Dimension);
+                std::vector<float> RecoverResidual(Dimension);
+                std::vector<float> RecoverVector(Dimension);
+                faiss::fvec_madd(Dimension, Base_batch.data() + j * Dimension, -1.0,  HNSWGraph->getDataByInternalId(ClusterLabel), BaseResidual.data());
+
+                PQ->compute_code(BaseResidual.data(), BaseCodeSubset[ClusterLabel].data() + ClusterInnerIdx * PQ->code_size);
+                PQ->decode(BaseCodeSubset[ClusterLabel].data() + ClusterInnerIdx * PQ->code_size, RecoverResidual.data());
+                faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, HNSWGraph->getDataByInternalId(ClusterLabel), RecoverVector.data());
+                BaseRecoverNormSubset[ClusterLabel][ClusterInnerIdx] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
+            }
+        }
+        TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
+    }
+    BaseInput.close();
+
     while(!ValidResult){
         size_t ClusterNum = size_t(MaxCandidateSize / (2 * (nb / nc)));
         size_t ClusterBatch = std::ceil(float(ClusterNum) / 10);
@@ -1255,61 +1313,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             TRecorder.recordTimeConsumption1();
             std::cout << "1: \n";
 
-            size_t NumLoadCluster = 0;
-            for (size_t i = 0; i < nq * ClusterNum; i++){
-                if (!QuantizeLabel[QueryLabel[i]]){
-                    uint32_t ClusterLabel = QueryLabel[i];
-                    QuantizeLabel[ClusterLabel] = true;
-                    BaseCodeSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size() * PQ->code_size);
-                    BaseRecoverNormSubset[ClusterLabel].resize(BaseIds[ClusterLabel].size());
-                    NumLoadCluster ++;
-                }
-            }
-            std::cout << "Search " << NumLoadCluster << " / " << nc << " clusters in the index for evaluation\n";
-
-            std::ifstream BaseInput(Path_base, std::ios::binary);
-            std::vector<float> Base_batch(Assignment_batch_size * Dimension);
-
-            FILE * fBaseInput = fopen(Path_base.c_str(), "rb+");
-
-            for (size_t i = 0; i < Assignment_num_batch; i++){
-                TRecorder.reset();
-                uint32_t Dim = 0;
-                for (size_t temp = 0; temp < Assignment_batch_size; temp++){
-                    size_t SuccessItems = fread((char *) & Dim, sizeof(uint32_t), 1, fBaseInput);
-                    assert(Dim == Dimension);
-                    SuccessItems = fread(Base_batch.data() + i * Dimension, sizeof(DataType), Dimension, fBaseInput);
-                    assert(SuccessItems == Dimension);
-                }
-
-                TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch with fread");
-                //readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
-                //TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
-#pragma omp parallel for
-                for (size_t j = 0; j < Assignment_batch_size; j++){
-                    uint32_t ClusterLabel = Base_ID_seq[i * Assignment_batch_size + j];
-                    if (QuantizeLabel[ClusterLabel]){
-                        uint32_t ClusterInnerIdx = 0;
-                        while (BaseIds[ClusterLabel][ClusterInnerIdx] != i * Assignment_batch_size + j && ClusterInnerIdx < BaseIds[ClusterLabel].size())
-                        {
-                            ClusterInnerIdx ++;
-                        }
-                        assert(ClusterInnerIdx < BaseIds[ClusterLabel].size());
-
-                        std::vector<float> BaseResidual(Dimension);
-                        std::vector<float> RecoverResidual(Dimension);
-                        std::vector<float> RecoverVector(Dimension);
-                        faiss::fvec_madd(Dimension, Base_batch.data() + j * Dimension, -1.0,  HNSWGraph->getDataByInternalId(ClusterLabel), BaseResidual.data());
-
-                        PQ->compute_code(BaseResidual.data(), BaseCodeSubset[ClusterLabel].data() + ClusterInnerIdx * PQ->code_size);
-                        PQ->decode(BaseCodeSubset[ClusterLabel].data() + ClusterInnerIdx * PQ->code_size, RecoverResidual.data());
-                        faiss::fvec_madd(Dimension, RecoverResidual.data(), 1.0, HNSWGraph->getDataByInternalId(ClusterLabel), RecoverVector.data());
-                        BaseRecoverNormSubset[ClusterLabel][ClusterInnerIdx] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
-                    }
-                }
-                TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
-            }
-            BaseInput.close();
 
 /*
             size_t NumLoadCluster = 0;
@@ -1350,7 +1353,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             }
             TRecorder.print_time_usage("Load and quantize the base vectors in |" + std::to_string(NumLoadCluster) + "| clusters ");
 */
-            //std::cout << "2: \n";
+            std::cout << "2: \n";
 
             // Prepare the PQ table for queries
             TRecorder.reset();
@@ -1359,7 +1362,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                 PQ->compute_inner_prod_table(QuerySet + QueryIdx * Dimension, PQTable.data() + QueryIdx * PQ->ksub * PQ->M);
             }
             TRecorder.recordTimeConsumption2();
-            //std::cout << "3: \n";
+            std::cout << "3: \n";
 
             // Search the quantized vectors and examine the recall target
             VisitedVec = 0;
