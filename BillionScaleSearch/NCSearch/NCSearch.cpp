@@ -1513,7 +1513,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
 
 // Input parameters: (1) scalar value (2) data vector (3) path (4) point, data structure
 void BillionUpdateCost(
-    size_t ClusterNum, size_t NC, float CheckProp, size_t LowerBound, size_t Dimension,
+    size_t ClusterNum, size_t nc, float CheckProp, size_t LowerBound, size_t Dimension,
     float * ClusterVectorCost,
     std::string Path_base,
     std::vector<std::vector<uint32_t>> & BaseIds, hnswlib::HierarchicalNSW * Graph
@@ -1560,7 +1560,7 @@ void BillionUpdateCost(
     assert(Dimension > 0 && LowerBound > 0 && CheckProp > 0 && exists(Path_base));
     std::cout << "Update cluster search cost based on centroids with Number of cluster visited: " << ClusterNum << "\n";
 #pragma omp parallel for
-    for (size_t i = 0; i < NC; i++){
+    for (size_t i = 0; i < nc; i++){
         std::vector<uint32_t> VectorLabel(ClusterNum);
         std::vector<float> VectorDist(ClusterNum);
 
@@ -1589,6 +1589,19 @@ void BillionUpdateCentroids(
     std::vector<std::vector<float>> SplitCentroids(NCBatch);
     std::vector<std::vector<std::vector<uint32_t>>> SplitBaseIds(NCBatch);
 
+    std::cout << "Loading the base vectors for cluster split training\n";
+    std::vector<std::vector<float>> SplitTrainSets(NCBatch);
+    std::ifstream BaseInput(Path_base, std::ios::binary);
+    for (size_t i = 0; i < NCBatch; i++){
+        size_t SplitTrainSize =  BaseIds[ClusterIDBatch[i]].size();
+        SplitTrainSets[i].resize(Dimension * SplitTrainSize);
+        for (size_t j = 0; j < SplitTrainSize; j++){
+            BaseInput.seekg(BaseIds[ClusterIDBatch[i]][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+            readXvecFvec<DataType>(BaseInput, SplitTrainSets[i].data() + j * Dimension, Dimension, 1);
+        }
+    }
+    BaseInput.close();
+
 #pragma omp parallel for 
     for (size_t i = 0; i < NCBatch; i++){ 
         // Train Split Centroids
@@ -1598,20 +1611,13 @@ void BillionUpdateCentroids(
         SplitBaseIds[i].resize(SplitM[i]);
 
         size_t SplitTrainSize = BaseIds[ClusterIDBatch[i]].size();
-        std::vector<float> SplitTrainSet(Dimension * SplitTrainSize);
-        //std::cout << "Copy training vectors\n"; 
 
-        std::ifstream BaseInput(Path_base, std::ios::binary);
-        for (size_t j = 0; j < SplitTrainSize; j++){
-            BaseInput.seekg(BaseIds[ClusterIDBatch[i]][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
-            readXvecFvec<DataType>(BaseInput, SplitTrainSet.data() + j * Dimension, Dimension, 1);
-        }
         std::vector<uint32_t> SplitLabels(SplitTrainSize, 0);
         std::vector<float> SplitDists(SplitTrainSize, 0);
 
         //std::cout << "Train the clusters with " << SplitM[i] << " centroids: " << ClusterCostBatch[i] << " " << AvgVectorCost << " " << SplitTrainSize << "\n"; 
         if (SplitTrainSize < SplitM[i]){std::cout << "Error: Split cluster with " << SplitTrainSize << " vectors to " << SplitM[i] << " clusters\n"; exit(0);};
-        optkmeans(SplitTrainSet.data(), Dimension, SplitTrainSize, SplitM[i], SplitCentroids[i].data(), false, false, optimize, Lambda, OptSize, false, true, false, 30, true, SplitLabels.data(), SplitDists.data());
+        optkmeans(SplitTrainSets[i].data(), Dimension, SplitTrainSize, SplitM[i], SplitCentroids[i].data(), false, false, optimize, Lambda, OptSize, false, true, false, 30, true, SplitLabels.data(), SplitDists.data());
 
         // Assign the local ID and local dist
         //std::cout << "Update the assignment\n";

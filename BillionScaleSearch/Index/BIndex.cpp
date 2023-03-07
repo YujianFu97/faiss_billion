@@ -331,7 +331,6 @@ uint32_t BIndex::LearnCentroidsINI(
         CNorms.resize(nc);
 
         std::string Path_cen_norm = Path_folder_recall + "Centroids_" + std::to_string(nc)+".norm";
-
 ///*
         if (!Retrain && exists(Path_cen_norm)){
             std::ifstream CenNormInput(Path_cen_norm, std::ios::binary);
@@ -348,7 +347,7 @@ uint32_t BIndex::LearnCentroidsINI(
             CenNormOutput.write((char * ) & nc, sizeof(size_t));
             CenNormOutput.write((char * ) CNorms.data(), nc * sizeof(float));
             CenNormOutput.close();
-       }
+        }
 
         // 1.2. Build PQ quantizer with the constructed centroids and the a subset of the baseset, Save the PQ quantizer to disk for further evaluation
         std::string Path_PQ = Path_folder_recall + "PQ_" + std::to_string(nc)+"_"+std::to_string(PQ_M) + "_" + std::to_string(nbits)+".pq";
@@ -384,8 +383,8 @@ uint32_t BIndex::LearnCentroidsINI(
         // 2. Update the search performance
         std::cout << "Get into the recall performance estimation process\n";
 
-
         auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, QuerySet.data(), QueryGT.data(), CNorms.data(), Base_ID_seq.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
+        //auto RecallResult = std::make_tuple(false, 200, 50471.9, 0.476594, 0.449813);
 
         delete PQ;
         Trecorder.print_record_time_usage(RecordFile, "Update the search recall performance");
@@ -489,7 +488,7 @@ uint32_t BIndex::LearnCentroidsINI(
             HNSWGraph = new hnswlib::HierarchicalNSW(Dimension, nc, GraphM, 2 * GraphM, GraphEf);
             for (size_t i = 0; i < nc; i++){HNSWGraph->addPoint(Centroids.data() + i * Dimension);}
             Path_Graph_info = Path_folder_recall + "Graph_" + std::to_string(nc) + "_" + std::to_string(GraphM) + "_" + std::to_string(GraphEf) + ".info"; 
-            Path_Graph_Edge = Path_folder_recall + "Graph_" + std::to_string(nc) + "_" + std::to_string(GraphM) + "_" + std::to_string(GraphEf) + ".edge"; 
+            Path_Graph_Edge = Path_folder_recall + "Graph_" + std::to_string(nc) + "_" + std::to_string(GraphM) + "_" + std::to_string(GraphEf) + ".edge";
             HNSWGraph->SaveEdges(Path_Graph_Edge); HNSWGraph->SaveInfo(Path_Graph_info);
             Path_centroid = Path_folder_recall + "Centroid_" + std::to_string(nc) + ".fvecs"; std::ofstream CentroidOutput(Path_centroid, std::ios::binary);
             uint32_t Dim = Dimension;

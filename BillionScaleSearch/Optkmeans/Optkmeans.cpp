@@ -225,7 +225,7 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
     // Update the vector assignment: complexity: TrainSize * RecallK * NNRNNNum
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
-            std::cout << "Checking " << i << " th vector, the " << j << " th neighbor gt: " << VectorGt[i * RecallK + j] << " " << TrainBeNNs[VectorGt[i * RecallK + j]].size() << "\n";
+            //std::cout << "Checking " << i << " th vector, the " << j << " th neighbor gt: " << VectorGt[i * RecallK + j] << " " << TrainBeNNs[VectorGt[i * RecallK + j]].size() << "\n";
             uint32_t NN = VectorGt[i * RecallK + j];
             if (AssignmentID[NN] == AssignmentID[i]){ // If the NN id is the same with original id, no need to check the shift
                 continue;
@@ -239,14 +239,14 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
                     OriginalClusterCost += ClusterSize[*it];
                 }
             }
-            std::cout << "Check the origin cost\n";
+            //std::cout << "Check the origin cost\n";
 
             // Shift the NN id to the original vector ID
             uint32_t OriginID = AssignmentID[NN];
             AssignmentID[NN] = AssignmentID[i];
             ClusterSize[OriginID]--; ClusterSize[AssignmentID[i]]++;
 
-            std::cout << "Get the search cost of shift result\n";
+            //std::cout << "Get the search cost of shift result\n";
 
             // Check the shift cost, can the shift reduce the search cost?
             std::vector<std::unordered_set<uint32_t>> VectorShiftCostSet(NNRNNNum);
@@ -260,7 +260,7 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
                     ShiftVectorCost += ClusterSize[*it];
                 }
             }
-            std::cout << "Check the shift cost\n";
+            //std::cout << "Check the shift cost\n";
 
             bool ShiftFlag = true;
 
@@ -270,6 +270,8 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
             else{
                 // Need to define the loss function, if the loss decrease, then do the shift, else we recover the assignment
                 // We use a parameter *prop* to decide the relative importance between distance and the search cost, the larger prop means we consider more on the distance
+                
+                /*
                 for (size_t temp = 0; temp < NNRNNNum; temp++){
                     std::cout << VectorCostSet[TrainBeNNs[NN][temp]].size() << " [";
                     for (auto it = VectorCostSet[TrainBeNNs[NN][temp]].begin(); it != VectorCostSet[TrainBeNNs[NN][temp]].end(); it++){
@@ -278,6 +280,7 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
                     std::cout << "]";
                 }
                 std::cout << "\n";
+                */
 
                 float OriginalNNDist = NeighborClusterDist[NN * NeighborNum]; 
                 assert(OriginalNNDist > 0);
@@ -288,7 +291,7 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
                     ShiftFlag = false;
                 }
             }
-            std::cout << "Check whether to update\n";
+            //std::cout << "Check whether to update\n";
 
             if (ShiftFlag){
                 for (size_t temp0  = 0; temp0 < NNRNNNum; temp0++){
@@ -300,7 +303,7 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
                 AssignmentID[NN] = OriginID;
                 ClusterSize[AssignmentID[i]]--; ClusterSize[OriginID]++;
             }
-            std::cout << "Update the shift process\n";
+            //std::cout << "Update the shift process\n";
         }
     }
 }
@@ -446,29 +449,47 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     }
 
     // For faster re-assignment, we only search several closest clusters 
-    std::vector<uint32_t> CenNeighborIDs(nc * ClusterBoundSize); std::vector<float> CenNeighborDists(nc * ClusterBoundSize);
+    std::vector<uint32_t> CenNeighborIDs(nc * ClusterBoundSize); std::vector<float> CenNeighborDists(nc * ClusterBoundSize); 
     for (size_t it = 0; it < neiterations; it++){
-        std::cout << "Now in the " << it << " / " << neiterations << " iterations\n";
+        std::cout << "Now in the " << it << " / " << neiterations << " iterations\n The top 10 and end 10 id:\n"; 
+
+        for(size_t i = 0; i < 10; i++){
+            std::cout<< AssignmentID[i] << " ";
+        }
+        for(size_t i = 0; i < 10; i ++){
+            std::cout << AssignmentID[TrainSize - i] << " ";
+        }
+        std::cout << "\n";
+
+        std::cout << "The cluster size of the last 10 clusters:\n";
+        for(size_t i = 0; i < 10; i++){
+            std::cout << ClusterSize[i] << " ";
+        }
+        for(size_t i = 0; i < 10; i++){
+            std::cout << ClusterSize[nc - i] << " ";
+        }
+        std::cout << "\n";
+
         // Update the vector assignment 
         neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), AssignmentID.data(), NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
 
-        Trecorder.print_time_usage("Optimize the assignment based on gt search cost");
-        
-        // Update the centroids
-        updatecentroids(nc, Dimension, TrainSize, TrainSet, AssignmentID.data(), Centroids, ClusterSize.data());
-        Trecorder.print_time_usage("Update the centroids with optimized assignment");
+        Trecorder.print_time_usage("Optimize the assignment based on gt search cost"); 
+
+        // Update the centroids 
+        updatecentroids(nc, Dimension, TrainSize, TrainSet, AssignmentID.data(), Centroids, ClusterSize.data()); 
+        Trecorder.print_time_usage("Update the centroids with optimized assignment"); 
 
         // Update the train vector assignment
         for (size_t i = 0; i < nc; i++){TrainIDs[i].resize(0);}
-        for (size_t i = 0; i < TrainSize; i++){TrainIDs[AssignmentID[i]].emplace_back(i);}
-        GraphSearch(CenNeighborIDs.data(), CenNeighborDists.data(), Centroids, Centroids, nc, nc, ClusterBoundSize, Dimension);
-        assert(ClusterBoundSize > NeighborNum);
-        for (size_t i = 0; i < nc; i++){
-            ClusterSize[i] = 0;
-            hnswlib::HierarchicalNSW * SubGraph = new hnswlib::HierarchicalNSW(Dimension, ClusterBoundSize); // Note: we use the default parameter setting in hnsw
-            for (size_t j = 0; j < ClusterBoundSize; j++){
-                uint32_t ClusterID = CenNeighborIDs[i * ClusterBoundSize + j];
-                SubGraph->addPoint(Centroids + ClusterID * Dimension);
+        for (size_t i = 0; i < TrainSize; i++){TrainIDs[AssignmentID[i]].emplace_back(i);} 
+        GraphSearch(CenNeighborIDs.data(), CenNeighborDists.data(), Centroids, Centroids, nc, nc, ClusterBoundSize, Dimension); 
+        assert(ClusterBoundSize > NeighborNum); 
+        for (size_t i = 0; i < nc; i++){ 
+            ClusterSize[i] = 0; 
+            hnswlib::HierarchicalNSW * SubGraph = new hnswlib::HierarchicalNSW(Dimension, ClusterBoundSize); // Note: we use the default parameter setting in hnsw 
+            for (size_t j = 0; j < ClusterBoundSize; j++){ 
+                uint32_t ClusterID = CenNeighborIDs[i * ClusterBoundSize + j]; 
+                SubGraph->addPoint(Centroids + ClusterID * Dimension); 
             }
 
 #pragma omp parallel for
@@ -498,7 +519,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
 
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
-            std::cout << "Checking " << i << " th vector, the " << j << " th neighbor gt\r";
+            //std::cout << "Checking " << i << " th vector, the " << j << " th neighbor gt assignment ID: " << AssignmentID[i] << " " << AssignmentID[VectorGt[i * RecallK + j]];
             uint32_t TargetClusterID = AssignmentID[i];
             uint32_t NNClusterID = AssignmentID[VectorGt[i * RecallK + j]];
             if (TargetClusterID != NNClusterID){ // The place of target vector and its NN is not in the same cluster
@@ -510,6 +531,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
                         break;
                     }
                 }
+
                 if (SqrtCPDist < 0){
                     SqrtCPDist = sqrt(faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, Centroids + NNClusterID * Dimension, Dimension));
                 }
@@ -519,15 +541,18 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
                 for (size_t temp0; temp0 < NeighborNum; temp0++){
                     if (NeighborClusterID[VectorGt[i * RecallK + j] * NeighborNum + temp0] == TargetClusterID){
                         VCDist = NeighborClusterDist[VectorGt[i * RecallK + j] * NeighborNum + temp0];
+                        break;
                     }
                 }
                 if(VCDist < 0){
-                    faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, TrainSet + VectorGt[i * RecallK + j] * Dimension, Dimension);
+                    VCDist = faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, TrainSet + VectorGt[i * RecallK + j] * Dimension, Dimension);
                 }
-                faiss::fvec_L2sqr(Centroids + NNClusterID * Dimension, TrainSet + VectorGt[i * RecallK + j] * Dimension, Dimension);
+
                 float CPDist = SqrtCPDist * SqrtCPDist;
                 float VPDist = NeighborClusterDist[VectorGt[i * RecallK + j] * NeighborNum];
                 float NSDist = SqrtCPDist / 2 - (VPDist + CPDist - VCDist) / (2 * SqrtCPDist);
+
+                std::cout << TargetClusterID << " " << NNClusterID << " " << CPDist << " " << VPDist << " " << VCDist<< " " << NSDist << " " << SqrtCPDist << " | ";
 
                 auto result = BoundaryConflictMap.find(std::make_pair(TargetClusterID, NNClusterID));
                 if (result != BoundaryConflictMap.end()){
@@ -540,6 +565,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             }
         }
     }
+    exit(0);
     Trecorder.print_time_usage("Make the boundary conflict map for return");
     return BoundaryConflictMap;
 }
