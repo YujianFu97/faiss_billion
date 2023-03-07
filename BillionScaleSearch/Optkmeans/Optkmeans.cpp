@@ -391,7 +391,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     time_recorder Trecorder = time_recorder();
 
     // Firstly train the index with original kmeans and then compute the neighbor info
-    
+
     // Prepare the neighbor info
     std::vector<uint32_t> NeighborClusterID(TrainSize * NeighborNum);
     std::vector<float> NeighborClusterDist(TrainSize * NeighborNum);
@@ -481,7 +481,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
                 }
             }
         }
-        
+
         for (size_t i = 0; i < TrainSize; i++){
             AssignmentID[i] = NeighborClusterID[i * NeighborNum];
             ClusterSize[AssignmentID[i]] ++;
@@ -540,9 +540,9 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             }
         }
     }
+    Trecorder.print_time_usage("Make the boundary conflict map for return");
     return BoundaryConflictMap;
 }
-
 
 
 // Do the kmeans training with the cluster size optimization, expect balanced cluster size

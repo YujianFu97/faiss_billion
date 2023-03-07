@@ -1237,11 +1237,10 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             NumLoadCluster ++;
         }
     }
-    std::cout << "Search " << NumLoadCluster << " / " << nc << " clusters in the index for evaluation\n";
+    std::cout << "Search " << NumLoadCluster << " / " << nc << " clusters in the index for evaluation with max ClusterNum: " << MaxClusterNum << "\n";
     std::ifstream BaseInput(Path_base, std::ios::binary);
     std::vector<float> Base_batch(Assignment_batch_size * Dimension);
 
-    
     for (size_t i = 0; i < Assignment_num_batch; i++){
         TRecorder.reset();
         readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
@@ -1251,7 +1250,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             uint32_t ClusterLabel = Base_ID_seq[i * Assignment_batch_size + j];
             if (QuantizeLabel[ClusterLabel]){
                 uint32_t ClusterInnerIdx = 0;
-                while (BaseIds[ClusterLabel][ClusterInnerIdx] != i * Assignment_batch_size + j && ClusterInnerIdx < BaseIds[ClusterLabel].size())
+                while (BaseIds[ClusterLabel][ClusterInnerIdx] != i * Assignment_batch_size + j)
                 {
                     ClusterInnerIdx ++;
                 }
@@ -1295,7 +1294,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         while (UpdateClusterNum)
         {
             // Record the time of graph search on centroids
-            std::cout << "0: \n";
             std::vector<float> QueryDist(nq * ClusterNum);
             std::vector<uint32_t> QueryLabel(nq * ClusterNum);
             TRecorder.reset();
@@ -1309,7 +1307,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             }
 
             TRecorder.recordTimeConsumption1();
-            std::cout << "1: \n";
 
 
 /*
@@ -1351,7 +1348,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             }
             TRecorder.print_time_usage("Load and quantize the base vectors in |" + std::to_string(NumLoadCluster) + "| clusters ");
 */
-            std::cout << "2: \n";
 
             // Prepare the PQ table for queries
             TRecorder.reset();
@@ -1360,7 +1356,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                 PQ->compute_inner_prod_table(QuerySet + QueryIdx * Dimension, PQTable.data() + QueryIdx * PQ->ksub * PQ->M);
             }
             TRecorder.recordTimeConsumption2();
-            std::cout << "3: \n";
 
             // Search the quantized vectors and examine the recall target
             VisitedVec = 0;
@@ -1446,9 +1441,8 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             //std::cout << "6: \n";
             ClusterNumList.emplace_back(ClusterNum); CanLengthList.emplace_back((VisitedVec) / nq); CenSearchTime.emplace_back(TRecorder.TempDuration1 / (nq * 1000)); VecSearchTime.emplace_back(TRecorder.TempDuration3 / (nq * 1000));
 
-            
             // Determine how should the clusternum change
-            if ((VisitedVec) / nq > MaxCandidateSize){
+            if (ClusterNum >= MaxClusterNum){
                 UpdateClusterNum = false;
                 AchieveTargetRecall = false;
             }
