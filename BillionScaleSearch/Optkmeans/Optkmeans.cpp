@@ -427,8 +427,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
         faiss::maxheap_heapify(RecallK, VectorDist.data() + i * RecallK, VectorGt.data() + i * RecallK);
         for (size_t j = 0; j < NeighborNum; j++){
             uint32_t ClusterID = NeighborClusterID[i * NeighborNum + j];
-            size_t ClusterSize = TrainIDs[ClusterID].size();
-            for (size_t temp = 0; temp < ClusterSize; temp++){
+            for (size_t temp = 0; temp < TrainIDs[ClusterID].size(); temp++){
                 uint32_t VectorID = TrainIDs[ClusterID][temp];
                 float Dist = faiss::fvec_L2sqr(TrainSet + i * Dimension, TrainSet + VectorID * Dimension, Dimension);
                 if (Dist < VectorDist[i * RecallK]){
@@ -483,10 +482,9 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             }
         }
         
-        
         for (size_t i = 0; i < TrainSize; i++){
-            ClusterSize[i] ++;
             AssignmentID[i] = NeighborClusterID[i * NeighborNum];
+            ClusterSize[AssignmentID[i]] ++;
             if (keeptrainlabels){
                 trainlabels[i] = NeighborClusterID[i * NeighborNum];
                 traindists[i] = NeighborClusterDist[i * NeighborNum];

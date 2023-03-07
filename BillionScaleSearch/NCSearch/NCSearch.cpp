@@ -1197,7 +1197,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     std::vector<bool> QuantizeLabel(nc, false);
     std::vector<std::vector<uint8_t>> BaseCodeSubset(nc);
     std::vector<std::vector<float>> BaseRecoverNormSubset(nc);
-    std::cout << "-2\n";
 
     std::vector<int64_t> ResultID(RecallK * nq, 0);
     std::vector<float> ResultDist(RecallK * nq, 0);
@@ -1208,7 +1207,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             GtSets[i].insert(QueryGtLabel[ngt * i + j]);
         }
     }
-    std::cout << "-1\n";
 
     bool ValidResult = false;
     float MinimumCoef = 0.95;
@@ -1224,11 +1222,11 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         auto result = HNSWGraph->searchBaseLayer(QuerySet + QueryIdx * Dimension, MaxClusterNum);
         for (size_t i = 0; i < MaxClusterNum; i++){
             MaxQueryLabel[QueryIdx * MaxClusterNum + MaxClusterNum - i - 1] = result.top().second;
-            MaxQueryLabel[QueryIdx * MaxClusterNum + MaxClusterNum - i - 1] = result.top().first;
+            MaxQueryDist[QueryIdx * MaxClusterNum + MaxClusterNum - i - 1] = result.top().first;
             result.pop();
         }
     }
-    
+
     size_t NumLoadCluster = 0;
     for (size_t i  = 0; i < nq * MaxClusterNum; i++){
         if (!QuantizeLabel[MaxQueryLabel[i]]){
