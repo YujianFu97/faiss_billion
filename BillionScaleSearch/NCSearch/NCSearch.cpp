@@ -1241,9 +1241,9 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     std::ifstream BaseInput(Path_base, std::ios::binary);
     std::vector<float> Base_batch(Assignment_batch_size * Dimension);
 
-    TRecorder.reset();
+    
     for (size_t i = 0; i < Assignment_num_batch; i++){
-
+        TRecorder.reset();
         readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
         TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
 #pragma omp parallel for
