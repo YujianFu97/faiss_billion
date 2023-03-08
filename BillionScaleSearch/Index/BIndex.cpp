@@ -474,6 +474,25 @@ uint32_t BIndex::LearnCentroidsINI(
                 std::cout << ClusterIDBatch[i] << " " << ClusterCostBatch[i] << " " << BaseIds[ClusterIDBatch[i]].size() << " | ";
             }
             std::cout << "\n";
+            exit(0);
+
+
+
+    std::cout << "Loading the base vectors for cluster split training\n";
+    std::vector<std::vector<float>> SplitTrainSets(NCBatch);
+    std::ifstream BaseInput(Path_base, std::ios::binary);
+    for (size_t i = 0; i < NCBatch; i++){
+        size_t SplitTrainSize =  BaseIds[ClusterIDBatch[i]].size();
+        SplitTrainSets[i].resize(Dimension * SplitTrainSize);
+        for (size_t j = 0; j < SplitTrainSize; j++){
+            BaseInput.seekg(BaseIds[ClusterIDBatch[i]][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+            readXvecFvec<DataType>(BaseInput, SplitTrainSets[i].data() + j * Dimension, Dimension, 1);
+        }
+    }
+    BaseInput.close();
+    exit(0);
+
+
 
             BillionUpdateCentroids(Dimension, NCBatch, SumClusterCost / nc, Optimize, Lambda, OptSize, nc, ClusterCostBatch.data(), ClusterIDBatch.data(), Centroids.data(), Base_ID_seq.data(), Path_base, BaseIds);
             Trecorder.print_record_time_usage(RecordFile, "Split the clusters and update the vector IDs");
