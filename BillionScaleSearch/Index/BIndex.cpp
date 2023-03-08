@@ -474,7 +474,7 @@ uint32_t BIndex::LearnCentroidsINI(
                 std::cout << ClusterIDBatch[i] << " " << ClusterCostBatch[i] << " " << BaseIds[ClusterIDBatch[i]].size() << " | ";
             }
             std::cout << "\n";
-            exit(0);
+            Trecorder.print_record_time_usage(RecordFile, "Update the Cluster Cost Queue for cluster split");
 
 
 
@@ -490,6 +490,7 @@ uint32_t BIndex::LearnCentroidsINI(
         }
     }
     BaseInput.close();
+    Trecorder.print_record_time_usage(RecordFile, "Load the base vectors for cluster split training");
     exit(0);
 
 

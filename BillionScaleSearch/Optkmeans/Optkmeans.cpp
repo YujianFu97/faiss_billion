@@ -457,7 +457,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             std::cout<< AssignmentID[i] << " ";
         }
         for(size_t i = 0; i < 10; i ++){
-            std::cout << AssignmentID[TrainSize - i] << " ";
+            std::cout << AssignmentID[TrainSize - i - 1] << " ";
         }
         std::cout << "\n";
 
@@ -466,7 +466,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             std::cout << ClusterSize[i] << " ";
         }
         for(size_t i = 0; i < 10; i++){
-            std::cout << ClusterSize[nc - i] << " ";
+            std::cout << ClusterSize[nc - i - 1] << " ";
         }
         std::cout << "\n";
 
@@ -497,7 +497,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
                 auto result = SubGraph->searchKnn(TrainSet + TrainIDs[i][j] * Dimension, NeighborNum);
                 for (size_t k = 0; k < NeighborNum; k++){
                     NeighborClusterDist[TrainIDs[i][j] * NeighborNum + NeighborNum - 1 - k] = result.top().first;
-                    NeighborClusterID[TrainIDs[i][j] * NeighborNum + NeighborNum - 1 - k] = result.top().second;
+                    NeighborClusterID[TrainIDs[i][j] * NeighborNum + NeighborNum - 1 - k] =  CenNeighborIDs[i * ClusterBoundSize + result.top().second];
                     result.pop();
                 }
             }
@@ -565,7 +565,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             }
         }
     }
-    exit(0);
+
     Trecorder.print_time_usage("Make the boundary conflict map for return");
     return BoundaryConflictMap;
 }

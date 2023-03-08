@@ -1442,7 +1442,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             ClusterNumList.emplace_back(ClusterNum); CanLengthList.emplace_back((VisitedVec) / nq); CenSearchTime.emplace_back(TRecorder.TempDuration1 / (nq * 1000)); VecSearchTime.emplace_back(TRecorder.TempDuration3 / (nq * 1000));
 
             // Determine how should the clusternum change
-            if (ClusterNum >= MaxClusterNum){
+            if (ClusterNum >= MaxClusterNum && VisitedGt / nq < TargetRecall){
                 UpdateClusterNum = false;
                 AchieveTargetRecall = false;
             }
