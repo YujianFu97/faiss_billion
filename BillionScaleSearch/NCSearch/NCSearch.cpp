@@ -1682,5 +1682,4 @@ void BillionUpdateCentroids(
             NC++;
         }
     }
-    exit(0);
 }

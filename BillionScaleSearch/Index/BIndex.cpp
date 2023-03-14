@@ -174,7 +174,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
     /********************************************/
     // Load the base set into main memory, save to time of expensive I/O cost
-    size_t MemorySize = 0; // In GB
+    size_t MemorySize = 250; // In GB
     size_t NumInMemoryBatches = MemorySize * 1024 * 1024 * 1024 / (sizeof(DataType) * Dimension * Assignment_batch_size);
     std::cout << "The number of batches to be stored in main memory for fast search is: " << NumInMemoryBatches << "\n";
     std::vector<DataType> InMemoryBatches(Dimension * NumInMemoryBatches * Assignment_batch_size);
@@ -325,14 +325,14 @@ uint32_t BIndex::LearnCentroidsINI(
     std::vector<float> SubResidual(PQ_TrainSize * Dimension, 0);
     std::vector<float> TrainSet(PQ_TrainSize * Dimension);
 
-    /*
+    
     BaseInput.open(Path_base, std::ios::binary);
     for (size_t i =0; i < PQ_TrainSize; i++){
         BaseInput.seekg(RandomId[i] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
         readXvecFvec<DataType>(BaseInput, TrainSet.data() + i * Dimension, Dimension, 1);
     }
     BaseInput.close();
-    */
+    
 
     Trecorder.print_record_time_usage(RecordFile, "Load the subtrainset for PQ training");
 
@@ -407,8 +407,8 @@ uint32_t BIndex::LearnCentroidsINI(
         // 2. Update the search performance
         std::cout << "Get into the recall performance estimation process\n";
 
-        //auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, Assignment_num_batch, NumInMemoryBatches,  QuerySet.data(), QueryGT.data(), CNorms.data(), Base_ID_seq.data(), InMemoryBatches.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
-        auto RecallResult = std::make_tuple(false, 200, 50471.9, 0.476594, 0.449813);
+        auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, Assignment_num_batch, NumInMemoryBatches,  QuerySet.data(), QueryGT.data(), CNorms.data(), Base_ID_seq.data(), InMemoryBatches.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
+        //auto RecallResult = std::make_tuple(false, 200, 50471.9, 0.476594, 0.449813);
 
         delete PQ;
         Trecorder.print_record_time_usage(RecordFile, "Update the search recall performance");
@@ -472,7 +472,7 @@ uint32_t BIndex::LearnCentroidsINI(
         if (ContinueSplit){
             // Update the candidate list size
             ClusterVectorCost.resize(nc, 0);
-            //BillionUpdateCost(std::get<1>(RecallResult), nc, CheckProp, LowerBound, Dimension, ClusterVectorCost.data(), Path_base, BaseIds, HNSWGraph);
+            BillionUpdateCost(std::get<1>(RecallResult), nc, CheckProp, LowerBound, Dimension, ClusterVectorCost.data(), Path_base, BaseIds, HNSWGraph);
             for (uint32_t i = 0; i < nc; i++){
                 ClusterCostQueue.emplace(std::make_pair(ClusterVectorCost[i], i));
                 SumClusterCost += ClusterVectorCost[i];
