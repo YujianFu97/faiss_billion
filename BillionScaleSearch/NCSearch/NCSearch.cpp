@@ -1211,7 +1211,6 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     bool ValidResult = false;
     float MinimumCoef = 0.95;
     size_t MaxRepeatTimes = 3;
-    const size_t Assignment_num_batch = 20;
     const size_t Assignment_batch_size = nb / Assignment_num_batch;
 
 
