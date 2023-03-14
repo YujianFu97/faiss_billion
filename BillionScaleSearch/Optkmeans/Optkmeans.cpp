@@ -228,6 +228,7 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
     /**************************************************************************/
     float OriginAvgClusterCost = 0;
     float OriginAvgVCDist = 0;
+    float OriginAvgRecall = 0;
     std::vector<float> VCDistList(TrainSize);
     for (size_t i = 0; i < TrainSize; i++){
         for (auto it = VectorCostSet[i].begin(); it != VectorCostSet[i].end(); it++){
@@ -235,6 +236,7 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
         }
         OriginAvgVCDist += NeighborClusterDist[i * NeighborNum];
         VCDistList[i] = NeighborClusterDist[i * NeighborNum];
+        OriginAvgRecall += VectorGtSet[i];
     }
     /***************************************************************************/
 
@@ -332,6 +334,7 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
                 for (size_t temp0  = 0; temp0 < NNRNNNum; temp0++){
                     uint32_t NNRNN = TrainBeNNs[NN][temp0];
                     VectorCostSet[NNRNN] = VectorShiftCostSet[temp0];
+                    VectorGtSet[NNRNN] = VectorShiftGtSet[temp0];
                 }
             }
             else{
@@ -358,14 +361,17 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
     /**************************************************************************/
     float AfterAvgClusterCost = 0;
     float AfterAvgVCDist = 0;
+    float AfterAvgRecall = 0;
     for (size_t i = 0; i < TrainSize; i++){
         AfterAvgVCDist += VCDistList[i];
+        AfterAvgRecall += VectorGtSet[i];
         for (auto it = VectorCostSet[i].begin(); it != VectorCostSet[i].end(); it++){
             AfterAvgClusterCost += ClusterSize[*it];
         }
     }
     std::cout << "The weight parameter prop used in optimization: " << prop << " The considered Recall@K: " << RecallK << " The NeighborNum: " << NeighborNum << "\n";
     std::cout << "Origin Search Cost: |" << OriginAvgClusterCost / TrainSize << "| After optimization cluster cost: |" << AfterAvgClusterCost / TrainSize << "|\n";
+    std::cout << "Origin Search Recall: |" << OriginAvgRecall / (RecallK * TrainSize) << "| After optimization Recall: |" << AfterAvgRecall / (RecallK * TrainSize) << "|\n";
     std::cout << "Origin VC dist: |" << OriginAvgVCDist / TrainSize << "| After optimization VC Dist: |" << AfterAvgVCDist / TrainSize << "|\n";
     std::cout << "The number of shift: |" << NumShift << "| in total potential choices: |" << RecallK * TrainSize << "|\n";
     /***************************************************************************/
@@ -438,7 +444,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             uint32_t * trainlabels, float * traindists){
     
     // This is the number of clusters to be considered in groundtruth
-    size_t NeighborNum = 50;
+    size_t NeighborNum = 10;
     // The number of groundtruth to be considered
     size_t RecallK = 2;
     bool Visualize = false;    prop = 0;
