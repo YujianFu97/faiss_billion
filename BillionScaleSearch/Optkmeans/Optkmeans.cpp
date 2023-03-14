@@ -188,8 +188,9 @@ void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, si
 }
 
 // Get the minimum search cost that can visit all of the neighbor groundtruth 
-void FetchSearchCost(uint32_t VectorID, size_t NeighborNum, size_t RecallK, int64_t * VectorGt, 
+size_t FetchSearchCost(uint32_t VectorID, size_t NeighborNum, size_t RecallK, int64_t * VectorGt, 
 uint32_t * AssignmentID, uint32_t * NeighborClusterID, std::unordered_set<uint32_t> & ClusterID){
+    size_t VisitedGt = 0;
     for (size_t i = 0; i < RecallK; i++){
         uint32_t NN = VectorGt[i];
         uint32_t Assignment = AssignmentID[NN];
@@ -198,10 +199,12 @@ uint32_t * AssignmentID, uint32_t * NeighborClusterID, std::unordered_set<uint32
                 ClusterID.insert(NeighborClusterID[VectorID * NeighborNum + temp0]);
             }
             if (NeighborClusterID[VectorID * NeighborNum + temp0] == Assignment){
+                VisitedGt ++;
                 break;
             }
         }
     }
+    return VisitedGt;
 }
 
 std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Dimension, float prop, bool Visualize,
@@ -214,10 +217,11 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
 
     time_recorder Trecorder = time_recorder();
     std::vector<std::unordered_set<uint32_t>> VectorCostSet(TrainSize);
+    std::vector<size_t> VectorGtSet(TrainSize, 0);
     size_t NumShift = 0;
 #pragma omp parallel for
     for (uint32_t i = 0; i < TrainSize; i++){
-        FetchSearchCost(i, NeighborNum, RecallK, VectorGt + i * RecallK, AssignmentID, NeighborClusterID, VectorCostSet[i]);
+        VectorGtSet[i] =  FetchSearchCost(i, NeighborNum, RecallK, VectorGt + i * RecallK, AssignmentID, NeighborClusterID, VectorCostSet[i]);
     }
     Trecorder.print_time_usage("Fetch the search cost of all train vectors");
 
@@ -271,12 +275,13 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
 
             // Check the shift cost, can the shift reduce the search cost?
             std::vector<std::unordered_set<uint32_t>> VectorShiftCostSet(NNRNNNum);
+            std::vector<size_t> VectorShiftGtSet(NNRNNNum);
             size_t ShiftClusterCost = 0;
             if(Visualize) std::cout << "Checking the shift search cost: \n";
             for (size_t temp0 = 0; temp0 < NNRNNNum; temp0++){
 
                 uint32_t NNRNN = TrainBeNNs[NN][temp0];
-                FetchSearchCost(NNRNN, NeighborNum, RecallK, VectorGt + NNRNN * RecallK, AssignmentID, NeighborClusterID, VectorShiftCostSet[temp0]);
+                VectorShiftGtSet[temp0] = FetchSearchCost(NNRNN, NeighborNum, RecallK, VectorGt + NNRNN * RecallK, AssignmentID, NeighborClusterID, VectorShiftCostSet[temp0]);
                 
                 if(Visualize) std::cout << "NNRNN vectors ID: " << NNRNN << " Neighbor Cluster ID and cost " << VectorShiftCostSet[temp0].size() << " [" ;
                 for (auto it = VectorShiftCostSet[temp0].begin(); it != VectorShiftCostSet[temp0].end(); it++){
@@ -433,7 +438,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             uint32_t * trainlabels, float * traindists){
     
     // This is the number of clusters to be considered in groundtruth
-    size_t NeighborNum = 200;
+    size_t NeighborNum = 50;
     // The number of groundtruth to be considered
     size_t RecallK = 2;
     bool Visualize = false;    prop = 0;

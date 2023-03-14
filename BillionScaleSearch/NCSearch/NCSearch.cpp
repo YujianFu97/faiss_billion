@@ -1236,7 +1236,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             NumLoadCluster ++;
         }
     }
-    std::cout << "Search " << NumLoadCluster << " / " << nc << " clusters in the index for evaluation with max ClusterNum: " << MaxClusterNum << "\n";
+    std::cout << "Search " << NumLoadCluster << " / " << nc << " clusters in the index for evaluation with max ClusterNum: " << MaxClusterNum << " Max Candidate Size: " << MaxCandidateSize << "\n";
     std::ifstream BaseInput(Path_base, std::ios::binary);
     std::vector<float> Base_batch(Assignment_batch_size * Dimension);
 
@@ -1244,6 +1244,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         TRecorder.reset();
 
         if (batch_idx < NumInMemoryBatches){
+#pragma omp parallel for
             for (size_t temp = 0; temp < Assignment_batch_size * Dimension; temp++){
                 Base_batch[temp] = InMemoryBatches[batch_idx * Assignment_batch_size * Dimension + temp];
             }
@@ -1573,7 +1574,7 @@ void BillionUpdateCost(
         std::vector<uint32_t> VectorLabel(ClusterNum);
         std::vector<float> VectorDist(ClusterNum);
 
-        auto result = Graph->searchKnn(Graph->getDataByInternalId(i), ClusterNum);
+        auto result = Graph->searchBaseLayer(Graph->getDataByInternalId(i), ClusterNum);
         for (size_t j = 0; j < ClusterNum; j++){
             VectorLabel[ClusterNum - j - 1] = result.top().second;
             VectorDist[ClusterNum - j - 1] = result.top().first;
