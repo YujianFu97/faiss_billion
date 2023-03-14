@@ -1606,6 +1606,8 @@ void BillionUpdateCentroids(
     std::vector<float> Base_batch(Dimension * Assignment_batch_size);
     size_t NumLoadedVectors = 0; size_t ClusterTrainSize = 0;
 
+    exit(0);
+
     for(size_t i = 0; i < NCBatch; i++){
         SplitTrainSets[i].resize(Dimension * BaseIds[ClusterIDBatch[i]].size());
         ClusterTrainSize += BaseIds[ClusterIDBatch[i]].size();

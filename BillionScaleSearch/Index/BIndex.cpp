@@ -472,7 +472,7 @@ uint32_t BIndex::LearnCentroidsINI(
         if (ContinueSplit){
             // Update the candidate list size
             ClusterVectorCost.resize(nc, 0);
-            BillionUpdateCost(std::get<1>(RecallResult), nc, CheckProp, LowerBound, Dimension, ClusterVectorCost.data(), Path_base, BaseIds, HNSWGraph);
+            //BillionUpdateCost(std::get<1>(RecallResult), nc, CheckProp, LowerBound, Dimension, ClusterVectorCost.data(), Path_base, BaseIds, HNSWGraph);
             for (uint32_t i = 0; i < nc; i++){
                 ClusterCostQueue.emplace(std::make_pair(ClusterVectorCost[i], i));
                 SumClusterCost += ClusterVectorCost[i];

@@ -444,7 +444,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             uint32_t * trainlabels, float * traindists){
     
     // This is the number of clusters to be considered in groundtruth
-    size_t NeighborNum = 10;
+    size_t NeighborNum = 1;
     // The number of groundtruth to be considered
     size_t RecallK = 2;
     bool Visualize = false;    prop = 0;
