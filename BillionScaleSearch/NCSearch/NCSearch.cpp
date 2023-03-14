@@ -1610,7 +1610,7 @@ void BillionUpdateCentroids(
         SplitTrainSets[i].resize(Dimension * BaseIds[ClusterIDBatch[i]].size());
         ClusterTrainSize += BaseIds[ClusterIDBatch[i]].size();
     }
-    exit(0);
+
 
     for (size_t batch_idx = 0; batch_idx < Assignment_num_batch; batch_idx++){
         std::cout << "Scanning the " << batch_idx << " / " << Assignment_num_batch << " batches to load the training vectors\n";
@@ -1620,20 +1620,22 @@ void BillionUpdateCentroids(
             }
         }
         else{
+            std::cout << "Loading the " << batch_idx << " / " << Assignment_num_batch << " batches from disk\n";
             BaseInput.seekg(batch_idx * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
-            readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
+            readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
         }
 
         for (size_t i = 0; i < NCBatch; i++){
             size_t SplitTrainSize =  BaseIds[ClusterIDBatch[i]].size();
             
             for (size_t j = 0; j < SplitTrainSize; j++){
-                if (batch_idx * Assignment_batch_size  <= BaseIds[ClusterIDBatch[i]][j] < (batch_idx + 1) * Assignment_batch_size){
+                if (batch_idx * Assignment_batch_size  <= BaseIds[ClusterIDBatch[i]][j]  && BaseIds[ClusterIDBatch[i]][j]  < (batch_idx + 1) * Assignment_batch_size){
                     memcpy(SplitTrainSets[i].data() + j * Dimension, Base_batch.data() + (BaseIds[ClusterIDBatch[i]][j] - batch_idx * Assignment_batch_size) * Dimension, Dimension * sizeof(float));
                     NumLoadedVectors ++;
                 }
             }
         }
+        exit(0);
     }
     BaseInput.close();
     std::cout << "The number of training vectors to be loaded: " << ClusterTrainSize << " The number of vectors loaded: " << NumLoadedVectors << "\n";
