@@ -59,7 +59,7 @@ void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, si
 std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans(float * Trainset, size_t Dimension, size_t Trainsize, size_t nc,  float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
             float * Centroids, bool Verbose, bool Optimize, 
             float lambda = 50, size_t OptSize = 10, bool UseGraph = false,
-            size_t iterations = 30, bool keeptrainlabels= false, 
+            size_t iterations = 30,
             uint32_t * trainlabels = nullptr, float * traindists = nullptr);
 
 

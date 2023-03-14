@@ -21,10 +21,17 @@ int main(){
     std::ifstream TrainInput(PathLearn, std::ios::binary);
     readXvec<float>(TrainInput, TrainSet.data(), Dimension, nt, true, true);
 
-    auto result = neighborkmeans(TrainSet.data(), Dimension, nt, nc, prop, Nlevel, 10, ClusterBoundSize, Centroids.data(), Verbose, UseOptimize, Lambda, OptSize, UseGraph);
-    std::cout << "The total number of boundary conflict record: " << result.size() << "\n";
-    exit(0);
-    for (auto iter = result.begin(); iter != result.end(); iter++){
-        std::cout << iter->first.first << " " << iter->first.second << " " << iter->second.first << " " << iter->second.second << " | ";
+    std::vector<uint32_t> TrainLabels(nt);
+    std::vector<float> TrainDists(nt);
+
+    auto result = neighborkmeans(TrainSet.data(), Dimension, nt, nc, prop, Nlevel, 10, ClusterBoundSize, Centroids.data(), Verbose, UseOptimize, Lambda, OptSize, UseGraph, 30, TrainLabels.data(), TrainDists.data());
+    std::cout << "The total number of boundary conflict record: " << result.size() << " The total number of centroids: " << nc << "\n";
+    
+    // Assignment of the base vectors: find the nearest trainset vectors
+    std::vector<std::vector<uint32_t>> TrainIds(nc);
+    for (size_t i = 0; i < nt; i++){
+
     }
+
+
 }

@@ -209,7 +209,7 @@ uint32_t * AssignmentID, uint32_t * NeighborClusterID, std::unordered_set<uint32
 
 std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Dimension, float prop, bool Visualize,
     std::vector<std::vector<uint32_t>> & TrainBeNNs,
-    float * TrainSet, float * Centroids, int64_t * VectorGt, uint32_t * AssignmentID, uint32_t * NeighborClusterID, float * ClusterSize, float * NeighborClusterDist
+    float * TrainSet, float * Centroids, int64_t * VectorGt, uint32_t * AssignmentID, float * AssignmentDist, uint32_t * NeighborClusterID, float * ClusterSize, float * NeighborClusterDist
 ){
     // Check the neighbor cluster num of all vectors
     // Result: The value in vectorcostsource: the number of NNs in the target cluster
@@ -229,13 +229,12 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
     float OriginAvgClusterCost = 0;
     float OriginAvgVCDist = 0;
     float OriginAvgRecall = 0;
-    std::vector<float> VCDistList(TrainSize);
     for (size_t i = 0; i < TrainSize; i++){
         for (auto it = VectorCostSet[i].begin(); it != VectorCostSet[i].end(); it++){
             OriginAvgClusterCost += ClusterSize[*it];
         }
         OriginAvgVCDist += NeighborClusterDist[i * NeighborNum];
-        VCDistList[i] = NeighborClusterDist[i * NeighborNum];
+        AssignmentDist[i] = NeighborClusterDist[i * NeighborNum];
         OriginAvgRecall += VectorGtSet[i];
     }
     /***************************************************************************/
@@ -324,7 +323,7 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
                     ShiftFlag = false;
                 }
                 else{
-                    VCDistList[NN] = ShiftNNDist;
+                    AssignmentDist[NN] = ShiftNNDist;
                 }
             }
             //std::cout << "Check whether to update\n";
@@ -363,7 +362,7 @@ std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t
     float AfterAvgVCDist = 0;
     float AfterAvgRecall = 0;
     for (size_t i = 0; i < TrainSize; i++){
-        AfterAvgVCDist += VCDistList[i];
+        AfterAvgVCDist += AssignmentDist[i];
         AfterAvgRecall += VectorGtSet[i];
         for (auto it = VectorCostSet[i].begin(); it != VectorCostSet[i].end(); it++){
             AfterAvgClusterCost += ClusterSize[*it];
@@ -440,7 +439,7 @@ void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize,
 std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
             float * Centroids, bool verbose, bool Optimize, 
             float lambda, size_t OptSize, bool UseGraph, 
-            size_t iterations, bool keeptrainlabels, 
+            size_t iterations,
             uint32_t * trainlabels, float * traindists){
     
 
@@ -487,9 +486,9 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
         ClusterSize[i] = TrainIDs[i].size();
     }
 
-    std::vector<uint32_t> AssignmentID(TrainSize);
     for (size_t i = 0; i < TrainSize; i++){
-        AssignmentID[i] = NeighborClusterIDBound[i * ClusterBoundSize];
+        trainlabels[i] = NeighborClusterIDBound[i * ClusterBoundSize];
+        traindists[i] = NeighborClusterDistBound[i * ClusterBoundSize];
     }
 
     std::vector<int64_t> VectorGt(TrainSize * RecallK);
@@ -602,22 +601,23 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     // Check the conflict number of boundary and update the maximum distance to the boundary
     std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> BoundaryConflictMap;
     for (size_t i = 0; i < 5; i++){
-        auto result = neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, Visualize, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), AssignmentID.data(), NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
+        auto result = neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, Visualize, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), trainlabels, traindists, NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
     }
     
     // Check the boundary conflict status
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
-            uint32_t TargetClusterID = AssignmentID[i];
-            uint32_t NNClusterID = AssignmentID[VectorGt[i * RecallK + j]];
+            uint32_t TargetClusterID = trainlabels[i];
+            uint32_t NNClusterID = trainlabels[VectorGt[i * RecallK + j]];
 
             if (TargetClusterID != NNClusterID){ // The place of target vector and its NN is not in the same cluster
                 // Compute the distance between NN and the boundary
                 float VTargetCDist = -1;
                 uint32_t NN = VectorGt[i * RecallK + j];
-                for (size_t temp = 0; temp < NeighborNum; temp++){
-                    if (NeighborClusterID[NN * NeighborNum + temp] == TargetClusterID){
-                        VTargetCDist = NeighborClusterDist[NN * NeighborNum + temp];
+                for (size_t temp = 0; temp < ClusterBoundSize; temp++){
+                    if (NeighborClusterDistBound[NN * ClusterBoundSize + temp] == TargetClusterID){
+                        VTargetCDist = NeighborClusterDistBound[NN * ClusterBoundSize + temp];
+                        assert(VTargetCDist == faiss::fvec_L2sqr(TrainSet + NN * Dimension, Centroids + TargetClusterID * Dimension, Dimension));
                     }
                 }
                 if (VTargetCDist < 0){
