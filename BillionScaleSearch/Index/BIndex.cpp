@@ -172,6 +172,22 @@ uint32_t BIndex::LearnCentroidsINI(
     if(!IndexPreTrained){
     // Parameters requried
 
+    /********************************************/
+    // Load the base set into main memory, save to time of expensive I/O cost
+    size_t MemorySize = 200; // In GB
+    size_t NumInMemoryBatches = MemorySize * 1e9 / (sizeof(DataType) * Dimension * Assignment_batch_size);
+    std::cout << "The number of batches to be stored in main memory for fast search is: " << NumInMemoryBatches << "\n";
+    std::vector<DataType> InMemoryBatches(Dimension * NumInMemoryBatches * Assignment_batch_size);
+
+    std::ifstream BaseInput(Path_base, std::ios::binary);
+    for (size_t i = 0; i < NumInMemoryBatches; i++){
+        std::cout << "Loading the " << i+1 << "  / " << NumInMemoryBatches << " batches \n";
+        readXvec<DataType>(BaseInput, InMemoryBatches.data() + i * Assignment_batch_size * Dimension, Dimension, Assignment_batch_size, true, true);
+    }
+    BaseInput.close();
+
+    /********************************************/
+
     std::ofstream OptOutput; OptOutput.open(Path_opt_file, std::ios::app);
 
     uint32_t Assignment_indice = 0;
@@ -220,22 +236,32 @@ uint32_t BIndex::LearnCentroidsINI(
     Trecorder.print_record_time_usage(RecordFile, "Construct the graph and save graph index");
 
     // 3.1. Assign the billion-scale dataset in batch and in parallel, we can run this assignment process on multiple machines
-    std::ifstream BaseInput(Path_base, std::ios::binary);
+    BaseInput.open(Path_base, std::ios::binary);
     std::string Path_ID_seq  = Path_folder + "BaseID_" + std::to_string(nc) + ".seq";
     for (uint32_t batch_idx = 0; batch_idx < Assignment_num; batch_idx++){
         std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(batch_idx + 1) + "_" + std::to_string(Assignment_num_batch) + ".ivecs";
         if (exists(Path_ID_seq) || exists(Batch_ID_path)){continue;}
 
         std::cout << "Assigning the " << Assignment_indice + batch_idx + 1 << " / " << Assignment_num_batch << " batch of the dataset and save ID to" << Batch_ID_path << " Time consumption: " << Trecorder.get_time_usage() << " s\n";
-        BaseInput.seekg((Assignment_indice + batch_idx) * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
-        std::vector<float> Base_batch(Assignment_batch_size * Dimension);
-        readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
         std::vector<uint32_t> Base_batch_id(Assignment_batch_size, 0);
+        std::vector<float> Base_batch(Assignment_batch_size * Dimension);
+
+
+        if (batch_idx < NumInMemoryBatches){
+            for (size_t temp = 0; temp < Assignment_batch_size * Dimension; temp++){
+                Base_batch[temp] = InMemoryBatches[batch_idx * Assignment_batch_size * Dimension + temp];
+            }
+        }
+        else{
+            BaseInput.seekg((Assignment_indice + batch_idx) * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+            readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
+        }
 #pragma omp parallel for
         for (uint32_t data_idx = 0; data_idx < Assignment_batch_size; data_idx++){
             auto Result = HNSWGraph->searchKnn(Base_batch.data() + data_idx * Dimension, 1);
             Base_batch_id[data_idx] = Result.top().second;
         }
+
         std::ofstream Batch_ID_output(Batch_ID_path, std::ios::binary);
         Batch_ID_output.write((char *) & Assignment_batch_size, sizeof(uint32_t));
         Batch_ID_output.write((char *) Base_batch_id.data(), Assignment_batch_size * sizeof(uint32_t));
@@ -299,8 +325,6 @@ uint32_t BIndex::LearnCentroidsINI(
     std::vector<float> SubResidual(PQ_TrainSize * Dimension, 0);
     std::vector<float> TrainSet(PQ_TrainSize * Dimension);
 
-
-
     /*
     BaseInput.open(Path_base, std::ios::binary);
     for (size_t i =0; i < PQ_TrainSize; i++){
@@ -309,7 +333,6 @@ uint32_t BIndex::LearnCentroidsINI(
     }
     BaseInput.close();
     */
-
 
     Trecorder.print_record_time_usage(RecordFile, "Load the subtrainset for PQ training");
 
@@ -323,9 +346,10 @@ uint32_t BIndex::LearnCentroidsINI(
 
     float OptPerTime = std::numeric_limits<float>::max();
     size_t FailureTimes = 0;
-    
+
     // The loop for changing the M
     while(ContinueSplit){
+
         std::cout << "\nRun cluster split with batch: " << NCBatch << " and nc: " << nc << "\n";
         // 1.1. Compute the centroid norm
         CNorms.resize(nc);
@@ -383,8 +407,8 @@ uint32_t BIndex::LearnCentroidsINI(
         // 2. Update the search performance
         std::cout << "Get into the recall performance estimation process\n";
 
-        //auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, QuerySet.data(), QueryGT.data(), CNorms.data(), Base_ID_seq.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
-        auto RecallResult = std::make_tuple(false, 200, 50471.9, 0.476594, 0.449813);
+        auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, Assignment_num_batch, NumInMemoryBatches,  QuerySet.data(), QueryGT.data(), CNorms.data(), Base_ID_seq.data(), InMemoryBatches.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
+        //auto RecallResult = std::make_tuple(false, 200, 50471.9, 0.476594, 0.449813);
 
         delete PQ;
         Trecorder.print_record_time_usage(RecordFile, "Update the search recall performance");
@@ -477,26 +501,7 @@ uint32_t BIndex::LearnCentroidsINI(
             Trecorder.print_record_time_usage(RecordFile, "Update the Cluster Cost Queue for cluster split");
 
 
-
-    std::cout << "Loading the base vectors for cluster split training\n";
-    std::vector<std::vector<float>> SplitTrainSets(NCBatch);
-
-    std::ifstream BaseInput(Path_base, std::ios::binary);
-    for (size_t i = 0; i < NCBatch; i++){
-        size_t SplitTrainSize =  BaseIds[ClusterIDBatch[i]].size();
-        SplitTrainSets[i].resize(Dimension * SplitTrainSize);
-        for (size_t j = 0; j < SplitTrainSize; j++){
-            //BaseInput.seekg(BaseIds[ClusterIDBatch[i]][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
-            readXvecFvec<DataType>(BaseInput, SplitTrainSets[i].data() + j * Dimension, Dimension, 1);
-        }
-    }
-    BaseInput.close();
-    Trecorder.print_record_time_usage(RecordFile, "Load the base vectors for cluster split training");
-    exit(0);
-
-
-
-            BillionUpdateCentroids(Dimension, NCBatch, SumClusterCost / nc, Optimize, Lambda, OptSize, nc, ClusterCostBatch.data(), ClusterIDBatch.data(), Centroids.data(), Base_ID_seq.data(), Path_base, BaseIds);
+            BillionUpdateCentroids(Dimension, NCBatch, SumClusterCost / nc, Optimize, Lambda, OptSize, nc, nb, Assignment_num_batch, NumInMemoryBatches, ClusterCostBatch.data(), ClusterIDBatch.data(), Centroids.data(), Base_ID_seq.data(), InMemoryBatches.data(), Path_base, BaseIds);
             Trecorder.print_record_time_usage(RecordFile, "Split the clusters and update the vector IDs");
 
             // Save the base set ID

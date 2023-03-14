@@ -1183,13 +1183,13 @@ std::string PathTrainsetLabel, size_t Dimension, size_t TrainSize, float TargetR
 
 // The section for changing the ClusterNum
 // Input parameters: (1) scalar value (2) data vector (3) path (4) point, data structure
+
 std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
-    size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt,
-    float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, uint32_t * Base_ID_seq,
+    size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt, size_t Assignment_num_batch, size_t NumInMemoryBatches,
+    float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, uint32_t * Base_ID_seq, DataType * InMemoryBatches,
     std::string Path_base, 
     std::ofstream & RecordFile, hnswlib::HierarchicalNSW * HNSWGraph, faiss::ProductQuantizer * PQ, std::vector<std::vector<uint32_t>> & BaseIds)
 {
-
     time_recorder TRecorder = time_recorder();
 
     // Accumulate the vector quantization in the clusters to be visited by the queries
@@ -1241,16 +1241,26 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
     std::ifstream BaseInput(Path_base, std::ios::binary);
     std::vector<float> Base_batch(Assignment_batch_size * Dimension);
 
-    for (size_t i = 0; i < Assignment_num_batch; i++){
+    for (size_t batch_idx = 0; batch_idx < Assignment_num_batch; batch_idx++){
         TRecorder.reset();
-        readXvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
-        TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
+
+        if (batch_idx < NumInMemoryBatches){
+            for (size_t temp = 0; temp < Assignment_batch_size * Dimension; temp++){
+                Base_batch[temp] = InMemoryBatches[batch_idx * Assignment_batch_size * Dimension + temp];
+            }
+        }
+        else{
+            BaseInput.seekg(batch_idx * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+            readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
+        }
+        
+        TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(batch_idx + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
 #pragma omp parallel for
         for (size_t j = 0; j < Assignment_batch_size; j++){
-            uint32_t ClusterLabel = Base_ID_seq[i * Assignment_batch_size + j];
+            uint32_t ClusterLabel = Base_ID_seq[batch_idx * Assignment_batch_size + j];
             if (QuantizeLabel[ClusterLabel]){
                 uint32_t ClusterInnerIdx = 0;
-                while (BaseIds[ClusterLabel][ClusterInnerIdx] != i * Assignment_batch_size + j)
+                while (BaseIds[ClusterLabel][ClusterInnerIdx] != batch_idx * Assignment_batch_size + j)
                 {
                     ClusterInnerIdx ++;
                 }
@@ -1267,7 +1277,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
                 BaseRecoverNormSubset[ClusterLabel][ClusterInnerIdx] = faiss::fvec_norm_L2sqr(RecoverVector.data(), Dimension);
             }
         }
-        TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(i + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
+        TRecorder.print_record_time_usage(RecordFile, "Process the " + std::to_string(batch_idx + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
     }
     BaseInput.close();
 
@@ -1580,8 +1590,8 @@ void BillionUpdateCost(
 
 // Input parameters: (1) scalar value (2) data vector (3) path (4) point, data structure
 void BillionUpdateCentroids(
-    size_t Dimension, size_t NCBatch, float AvgVectorCost, bool optimize, float Lambda, size_t OptSize, size_t & NC,
-    float * ClusterCostBatch, uint32_t * ClusterIDBatch, float * Centroids, uint32_t * Base_ID_seq,
+    size_t Dimension, size_t NCBatch, float AvgVectorCost, bool optimize, float Lambda, size_t OptSize, size_t & NC, size_t nb, size_t Assignment_num_batch, size_t NumInMemoryBatches, 
+    float * ClusterCostBatch, uint32_t * ClusterIDBatch, float * Centroids, uint32_t * Base_ID_seq, DataType * InMemoryBatches,
     std::string Path_base,
     std::vector<std::vector<uint32_t>> & BaseIds
 ){
@@ -1590,17 +1600,43 @@ void BillionUpdateCentroids(
     std::vector<std::vector<std::vector<uint32_t>>> SplitBaseIds(NCBatch);
 
     std::cout << "Loading the base vectors for cluster split training\n";
-    std::vector<std::vector<float>> SplitTrainSets(NCBatch);
+    std::vector<std::vector<float>> SplitTrainSets(NCBatch); 
     std::ifstream BaseInput(Path_base, std::ios::binary);
-    for (size_t i = 0; i < NCBatch; i++){
-        size_t SplitTrainSize =  BaseIds[ClusterIDBatch[i]].size();
-        SplitTrainSets[i].resize(Dimension * SplitTrainSize);
-        for (size_t j = 0; j < SplitTrainSize; j++){
-            BaseInput.seekg(BaseIds[ClusterIDBatch[i]][j] * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
-            readXvecFvec<DataType>(BaseInput, SplitTrainSets[i].data() + j * Dimension, Dimension, 1);
+    size_t Assignment_batch_size = nb / Assignment_num_batch;
+    std::vector<float> Base_batch(Dimension * Assignment_batch_size);
+    size_t NumLoadedVectors = 0; size_t ClusterTrainSize = 0;
+
+    for(size_t i = 0; i < NCBatch; i++){
+        SplitTrainSets[i].resize(Dimension * BaseIds[ClusterIDBatch[i]].size());
+        ClusterTrainSize += BaseIds[ClusterIDBatch[i]].size();
+    }
+
+    for (size_t batch_idx = 0; batch_idx < Assignment_num_batch; batch_idx++){
+        std::cout << "Scanning the " << batch_idx << " / " << Assignment_num_batch << " batches to load the training vectors\n";
+        if (batch_idx < NumInMemoryBatches){
+            for (size_t temp = 0; temp < Assignment_batch_size * Dimension; temp++){
+                Base_batch[temp] = InMemoryBatches[batch_idx * Assignment_batch_size * Dimension + temp];
+            }
+        }
+        else{
+            BaseInput.seekg(batch_idx * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
+            readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
+        }
+
+        for (size_t i = 0; i < NCBatch; i++){
+            size_t SplitTrainSize =  BaseIds[ClusterIDBatch[i]].size();
+            
+            for (size_t j = 0; j < SplitTrainSize; j++){
+                if (batch_idx * Assignment_batch_size  <= BaseIds[ClusterIDBatch[i]][j] < (batch_idx + 1) * Assignment_batch_size){
+                    memcpy(SplitTrainSets[i].data() + j * Dimension, Base_batch.data() + (BaseIds[ClusterIDBatch[i]][j] - batch_idx * Assignment_batch_size) * Dimension, Dimension * sizeof(float));
+                    NumLoadedVectors ++;
+                }
+            }
         }
     }
     BaseInput.close();
+    std::cout << "The number of training vectors to be loaded: " << ClusterTrainSize << " The number of vectors loaded: " << NumLoadedVectors << "\n";
+    assert(ClusterTrainSize == NumLoadedVectors);
 
 #pragma omp parallel for 
     for (size_t i = 0; i < NCBatch; i++){ 
@@ -1642,5 +1678,4 @@ void BillionUpdateCentroids(
             NC++;
         }
     }
-
 }

@@ -30,7 +30,7 @@ size_t AccustopItem[NumPara] = {100000};
 // For optkmeans
 size_t Nlevel = 2;
 bool UseGraph = true;
-bool UseOptimize = true;
+bool UseOptimize = false;
 bool ConstrolStart = false;
 bool AddiFunction = true;
 
@@ -41,7 +41,7 @@ size_t EfConstruction = 100;
 //For PS
 size_t IniM = 30000;
 size_t MaxM = 100000;
-size_t ClusterBoundSize = 100;
+size_t ClusterBoundSize = 200;
 size_t CheckBatch = 1000;
 size_t Verbose = true;
 size_t PQ_TrainSize_PS = 10000; 

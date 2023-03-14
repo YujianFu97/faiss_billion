@@ -23,8 +23,8 @@ uint32_t HeuristicINI(std::ofstream & RecordFile, size_t nb, size_t nq, size_t R
 std::string PathTrainsetLabel, size_t Dimension, size_t TrainSize, float TargetRecall, float MaxCandidateSize, bool verbose, bool optimize, size_t ClusterBoundSize, size_t CheckBatch, size_t MaxM, size_t IniM, size_t NLevel, size_t GraphM, size_t GraphEf, size_t OptSize, float Lambda);
 
 std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
-    size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt,
-    float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, uint32_t * Base_ID_seq,
+    size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt, size_t Assignment_num_batch, size_t NumInMemoryBatches,
+    float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, uint32_t * Base_ID_seq, DataType * InMemoryBatches,
     std::string Path_base, 
     std::ofstream & RecordFile, hnswlib::HierarchicalNSW * CentroidHNSW, faiss::ProductQuantizer * PQ, std::vector<std::vector<uint32_t>> & BaseIds);
 
@@ -37,8 +37,8 @@ void BillionUpdateCost(
 );
 
 void BillionUpdateCentroids(
-    size_t Dimension, size_t NCBatch, float AvgVectorCost, bool optimize, float Lambda, size_t OptSize, size_t & NC,
-    float * ClusterCostBatch, uint32_t * ClusterIDBatch, float * Centroids, uint32_t * Base_ID_seq,
+    size_t Dimension, size_t NCBatch, float AvgVectorCost, bool optimize, float Lambda, size_t OptSize, size_t & NC, size_t nb, size_t Assignment_num_batch, size_t NumInMemoryBatches, 
+    float * ClusterCostBatch, uint32_t * ClusterIDBatch, float * Centroids, uint32_t * Base_ID_seq, DataType * InMemoryBatches,
     std::string Path_base,
     std::vector<std::vector<uint32_t>> & BaseIds
 );

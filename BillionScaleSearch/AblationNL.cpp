@@ -22,6 +22,8 @@ int main(){
     readXvec<float>(TrainInput, TrainSet.data(), Dimension, nt, true, true);
 
     auto result = neighborkmeans(TrainSet.data(), Dimension, nt, nc, prop, Nlevel, 10, ClusterBoundSize, Centroids.data(), Verbose, UseOptimize, Lambda, OptSize, UseGraph);
+    std::cout << "The total number of boundary conflict record: " << result.size() << "\n";
+    exit(0);
     for (auto iter = result.begin(); iter != result.end(); iter++){
         std::cout << iter->first.first << " " << iter->first.second << " " << iter->second.first << " " << iter->second.second << " | ";
     }

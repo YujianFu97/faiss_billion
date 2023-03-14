@@ -204,7 +204,7 @@ uint32_t * AssignmentID, uint32_t * NeighborClusterID, std::unordered_set<uint32
     }
 }
 
-void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Dimension, float prop,
+std::pair<float, float> neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Dimension, float prop, bool Visualize,
     std::vector<std::vector<uint32_t>> & TrainBeNNs,
     float * TrainSet, float * Centroids, int64_t * VectorGt, uint32_t * AssignmentID, uint32_t * NeighborClusterID, float * ClusterSize, float * NeighborClusterDist
 ){
@@ -214,30 +214,51 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
 
     time_recorder Trecorder = time_recorder();
     std::vector<std::unordered_set<uint32_t>> VectorCostSet(TrainSize);
+    size_t NumShift = 0;
 #pragma omp parallel for
     for (uint32_t i = 0; i < TrainSize; i++){
         FetchSearchCost(i, NeighborNum, RecallK, VectorGt + i * RecallK, AssignmentID, NeighborClusterID, VectorCostSet[i]);
     }
     Trecorder.print_time_usage("Fetch the search cost of all train vectors");
 
+    /**************************************************************************/
+    float OriginAvgClusterCost = 0;
+    float OriginAvgVCDist = 0;
+    std::vector<float> VCDistList(TrainSize);
+    for (size_t i = 0; i < TrainSize; i++){
+        for (auto it = VectorCostSet[i].begin(); it != VectorCostSet[i].end(); it++){
+            OriginAvgClusterCost += ClusterSize[*it];
+        }
+        OriginAvgVCDist += NeighborClusterDist[i * NeighborNum];
+        VCDistList[i] = NeighborClusterDist[i * NeighborNum];
+    }
+    /***************************************************************************/
+
     // Check the NNs of each target vector, whether the NN should be placed into the cluster with target vector
     // Update the vector ID based on the neighbor search cost
     // Update the vector assignment: complexity: TrainSize * RecallK * NNRNNNum
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
-            //std::cout << "Checking " << i << " th vector, the " << j << " th neighbor gt: " << VectorGt[i * RecallK + j] << " " << TrainBeNNs[VectorGt[i * RecallK + j]].size() << "\n";
+            
             uint32_t NN = VectorGt[i * RecallK + j];
             if (AssignmentID[NN] == AssignmentID[i]){ // If the NN id is the same with original id, no need to check the shift
                 continue;
             }
+
+            if(Visualize) std::cout << "\nChecking " << i << " th vector, the " << j << " th neighbor gt: " << VectorGt[i * RecallK + j] << " Target cluster: " << AssignmentID[i] << " Target Closest Cluster: " << NeighborClusterID[i * NeighborNum] << " NN Cluster: " << AssignmentID[NN] << " ToBeNNNum: " << TrainBeNNs[VectorGt[i * RecallK + j]].size() << "\n";
             // Check the origin cost
             size_t NNRNNNum = TrainBeNNs[NN].size(); // This is the number of vectors that take NN as its K nearest neighbors
             size_t OriginalClusterCost = 0;  // This is the search cost that is related to the NN vector
+
+            if (Visualize) std::cout << "Checking the original search cost: \n";
             for (size_t temp0 = 0; temp0 < NNRNNNum; temp0++){
                 uint32_t NNRNN = TrainBeNNs[NN][temp0];
+                if(Visualize) std::cout << "NNRNN vectors ID: " << NNRNN << " Neighbor Cluster ID and cost " << VectorCostSet[NNRNN].size() << " [" ;
                 for (auto it = VectorCostSet[NNRNN].begin(); it != VectorCostSet[NNRNN].end(); it++){
                     OriginalClusterCost += ClusterSize[*it];
+                    if (Visualize) std::cout << "(" << *it << "," <<   ClusterSize[*it] <<  ") ";
                 }
+                if(Visualize) std::cout << "]\n";
             }
             //std::cout << "Check the origin cost\n";
 
@@ -250,21 +271,25 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
 
             // Check the shift cost, can the shift reduce the search cost?
             std::vector<std::unordered_set<uint32_t>> VectorShiftCostSet(NNRNNNum);
-            size_t ShiftVectorCost = 0;
+            size_t ShiftClusterCost = 0;
+            if(Visualize) std::cout << "Checking the shift search cost: \n";
             for (size_t temp0 = 0; temp0 < NNRNNNum; temp0++){
 
                 uint32_t NNRNN = TrainBeNNs[NN][temp0];
                 FetchSearchCost(NNRNN, NeighborNum, RecallK, VectorGt + NNRNN * RecallK, AssignmentID, NeighborClusterID, VectorShiftCostSet[temp0]);
-
+                
+                if(Visualize) std::cout << "NNRNN vectors ID: " << NNRNN << " Neighbor Cluster ID and cost " << VectorShiftCostSet[temp0].size() << " [" ;
                 for (auto it = VectorShiftCostSet[temp0].begin(); it != VectorShiftCostSet[temp0].end(); it++){
-                    ShiftVectorCost += ClusterSize[*it];
+                    ShiftClusterCost += ClusterSize[*it];
+                    if(Visualize) std::cout << "(" << *it << "," <<   ClusterSize[*it] <<  ") ";
                 }
+                if(Visualize) std::cout << "]\n";
             }
-            //std::cout << "Check the shift cost\n";
+            if(Visualize) std::cout << "The original search cost: " << OriginalClusterCost << " Shift search cost: " << ShiftClusterCost << "\n";
 
             bool ShiftFlag = true;
 
-            if (ShiftVectorCost > OriginalClusterCost){
+            if (ShiftClusterCost > OriginalClusterCost){
                 ShiftFlag = false;
             }
             else{
@@ -283,17 +308,22 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
                 */
 
                 float OriginalNNDist = NeighborClusterDist[NN * NeighborNum]; 
-                assert(OriginalNNDist > 0);
+                assert(OriginalNNDist >= 0);
                 assert(OriginalClusterCost > 0);
                 float ShiftNNDist = faiss::fvec_L2sqr(TrainSet + NN * Dimension, Centroids +  AssignmentID[i] * Dimension, Dimension);
+                if(Visualize) std::cout << "ShiftNNDist: " << ShiftNNDist << " OriginNNDist: " << OriginalNNDist << " ShiftVectorCost: " << ShiftClusterCost << " OriginalVectorCost: " << OriginalClusterCost <<  "\n";
                 // The smaller prop means more shift cases
-                if (prop *  (ShiftNNDist - OriginalNNDist) / OriginalNNDist > (OriginalClusterCost - ShiftVectorCost) / OriginalClusterCost){
+                if (((prop *  (ShiftNNDist - OriginalNNDist)) / OriginalNNDist) > (float (OriginalClusterCost - ShiftClusterCost) / OriginalClusterCost)){
                     ShiftFlag = false;
+                }
+                else{
+                    VCDistList[NN] = ShiftNNDist;
                 }
             }
             //std::cout << "Check whether to update\n";
 
             if (ShiftFlag){
+                NumShift ++;
                 for (size_t temp0  = 0; temp0 < NNRNNNum; temp0++){
                     uint32_t NNRNN = TrainBeNNs[NN][temp0];
                     VectorCostSet[NNRNN] = VectorShiftCostSet[temp0];
@@ -303,9 +333,38 @@ void neioptimize(size_t TrainSize, size_t NeighborNum, size_t RecallK, size_t Di
                 AssignmentID[NN] = OriginID;
                 ClusterSize[AssignmentID[i]]--; ClusterSize[OriginID]++;
             }
+
+
+            if(Visualize) {
+                std::cout << "Optimize result: Gt cluster: " << AssignmentID[NN] << " Target Cluster Size: " << ClusterSize[AssignmentID[i]] << " Gt Cluster Size: " << ClusterSize[AssignmentID[NN]] << "\n"; 
+                for (size_t temp0 = 0; temp0 < NNRNNNum; temp0++){
+                    uint32_t NNRNN = TrainBeNNs[NN][temp0];
+                    std::cout << "NNRNN vectors ID: " << NNRNN << " Neighbor Cluster ID and cost " << VectorShiftCostSet[temp0].size() << " [" ;
+                    for (auto it = VectorCostSet[NNRNN].begin(); it != VectorCostSet[NNRNN].end(); it++){
+                        std::cout << "(" << *it << "," <<   ClusterSize[*it] <<  ") ";
+                    }
+                    std::cout << "]\n";
+                }                
+            }
+
             //std::cout << "Update the shift process\n";
         }
     }
+    /**************************************************************************/
+    float AfterAvgClusterCost = 0;
+    float AfterAvgVCDist = 0;
+    for (size_t i = 0; i < TrainSize; i++){
+        AfterAvgVCDist += VCDistList[i];
+        for (auto it = VectorCostSet[i].begin(); it != VectorCostSet[i].end(); it++){
+            AfterAvgClusterCost += ClusterSize[*it];
+        }
+    }
+    std::cout << "The weight parameter prop used in optimization: " << prop << " The considered Recall@K: " << RecallK << " The NeighborNum: " << NeighborNum << "\n";
+    std::cout << "Origin Search Cost: |" << OriginAvgClusterCost / TrainSize << "| After optimization cluster cost: |" << AfterAvgClusterCost / TrainSize << "|\n";
+    std::cout << "Origin VC dist: |" << OriginAvgVCDist / TrainSize << "| After optimization VC Dist: |" << AfterAvgVCDist / TrainSize << "|\n";
+    std::cout << "The number of shift: |" << NumShift << "| in total potential choices: |" << RecallK * TrainSize << "|\n";
+    /***************************************************************************/
+    return std::make_pair(OriginAvgClusterCost, AfterAvgClusterCost);
 }
 
 void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize,
@@ -363,6 +422,7 @@ void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize,
             n_void++;
         }
     }
+    std::cout << "Update the cluster centroids with " << n_void << " splits \n";
 }
 
 // Kmeans training with neighbor info for optimization
@@ -373,9 +433,10 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             uint32_t * trainlabels, float * traindists){
     
     // This is the number of clusters to be considered in groundtruth
-    size_t NeighborNum = 10;
+    size_t NeighborNum = 200;
     // The number of groundtruth to be considered
-    size_t RecallK = 10;
+    size_t RecallK = 2;
+    bool Visualize = false;    prop = 0;
 
     // Corner cases
     if (TrainSize < nc){
@@ -407,7 +468,6 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     Trecorder.print_time_usage("Search the train vectors for further updates");
 
 
-
     for (size_t i = 0; i < TrainSize; i++){
         TrainIDs[NeighborClusterID[i * NeighborNum]].emplace_back(i);
     }
@@ -426,12 +486,15 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     std::vector<float> VectorDist(TrainSize * RecallK);
 
 #pragma omp parallel for
-    for (size_t i = 0; i < TrainSize; i++){
+    for (uint32_t i = 0; i < TrainSize; i++){
         faiss::maxheap_heapify(RecallK, VectorDist.data() + i * RecallK, VectorGt.data() + i * RecallK);
         for (size_t j = 0; j < NeighborNum; j++){
             uint32_t ClusterID = NeighborClusterID[i * NeighborNum + j];
             for (size_t temp = 0; temp < TrainIDs[ClusterID].size(); temp++){
                 uint32_t VectorID = TrainIDs[ClusterID][temp];
+                if (VectorID == i){
+                    continue;
+                }
                 float Dist = faiss::fvec_L2sqr(TrainSet + i * Dimension, TrainSet + VectorID * Dimension, Dimension);
                 if (Dist < VectorDist[i * RecallK]){
                     faiss::maxheap_pop(RecallK, VectorDist.data() + i * RecallK, VectorGt.data() + i * RecallK);
@@ -448,10 +511,11 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
         }
     }
 
-    // For faster re-assignment, we only search several closest clusters 
+/*
     std::vector<uint32_t> CenNeighborIDs(nc * ClusterBoundSize); std::vector<float> CenNeighborDists(nc * ClusterBoundSize); 
+    std::vector<float> ClusterCostList;
     for (size_t it = 0; it < neiterations; it++){
-        std::cout << "Now in the " << it << " / " << neiterations << " iterations\n The top 10 and end 10 id:\n"; 
+        std::cout << "Now in the " << it+1 << " / " << neiterations << " iterations\n The top 10 and end 10 id:\n"; 
 
         for(size_t i = 0; i < 10; i++){
             std::cout<< AssignmentID[i] << " ";
@@ -471,8 +535,9 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
         std::cout << "\n";
 
         // Update the vector assignment 
-        neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), AssignmentID.data(), NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
+        auto result = neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, Visualize, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), AssignmentID.data(), NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
 
+        ClusterCostList.emplace_back(result.first / TrainSize); ClusterCostList.emplace_back(result.second / TrainSize);
         Trecorder.print_time_usage("Optimize the assignment based on gt search cost"); 
 
         // Update the centroids 
@@ -513,54 +578,40 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
         }
         Trecorder.print_time_usage("Update the assignment with sub-graph search");
     }
+*/
 
     // Check the conflict number of boundary and update the maximum distance to the boundary
     std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> BoundaryConflictMap;
-
+    for (size_t i = 0; i < 5; i++){
+        auto result = neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, Visualize, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), AssignmentID.data(), NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
+    }
+    
+    // Check the boundary conflict status
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
-            //std::cout << "Checking " << i << " th vector, the " << j << " th neighbor gt assignment ID: " << AssignmentID[i] << " " << AssignmentID[VectorGt[i * RecallK + j]];
             uint32_t TargetClusterID = AssignmentID[i];
             uint32_t NNClusterID = AssignmentID[VectorGt[i * RecallK + j]];
+
             if (TargetClusterID != NNClusterID){ // The place of target vector and its NN is not in the same cluster
                 // Compute the distance between NN and the boundary
-                float SqrtCPDist = -1;
-                for (size_t temp0 = 0; temp0 < ClusterBoundSize; temp0++){
-                    if (CenNeighborIDs[TargetClusterID * ClusterBoundSize + temp0] == NNClusterID){
-                        SqrtCPDist = sqrt(CenNeighborDists[TargetClusterID * ClusterBoundSize + temp0]);
-                        break;
+                float VTargetCDist = -1;
+                uint32_t NN = VectorGt[i * RecallK + j];
+                for (size_t temp = 0; temp < NeighborNum; temp++){
+                    if (NeighborClusterID[NN * NeighborNum + temp] == TargetClusterID){
+                        VTargetCDist = NeighborClusterDist[NN * NeighborNum + temp];
                     }
                 }
-
-                if (SqrtCPDist < 0){
-                    SqrtCPDist = sqrt(faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, Centroids + NNClusterID * Dimension, Dimension));
+                if (VTargetCDist < 0){
+                    VTargetCDist = faiss::fvec_L2sqr(TrainSet + NN * Dimension, Centroids + TargetClusterID * Dimension, Dimension);
                 }
-
-                // Get the distance between the conflict NNs and the mid line between two clusters
-                float VCDist = -1;
-                for (size_t temp0; temp0 < NeighborNum; temp0++){
-                    if (NeighborClusterID[VectorGt[i * RecallK + j] * NeighborNum + temp0] == TargetClusterID){
-                        VCDist = NeighborClusterDist[VectorGt[i * RecallK + j] * NeighborNum + temp0];
-                        break;
-                    }
-                }
-                if(VCDist < 0){
-                    VCDist = faiss::fvec_L2sqr(Centroids + TargetClusterID * Dimension, TrainSet + VectorGt[i * RecallK + j] * Dimension, Dimension);
-                }
-
-                float CPDist = SqrtCPDist * SqrtCPDist;
-                float VPDist = NeighborClusterDist[VectorGt[i * RecallK + j] * NeighborNum];
-                float NSDist = SqrtCPDist / 2 - (VPDist + CPDist - VCDist) / (2 * SqrtCPDist);
-
-                std::cout << TargetClusterID << " " << NNClusterID << " " << CPDist << " " << VPDist << " " << VCDist<< " " << NSDist << " " << SqrtCPDist << " | ";
-
+                
                 auto result = BoundaryConflictMap.find(std::make_pair(TargetClusterID, NNClusterID));
                 if (result != BoundaryConflictMap.end()){
                     BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].first ++;
-                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second = BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second > NSDist ? BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second : NSDist;
+                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second = BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second > VTargetCDist ? BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second : VTargetCDist;
                 }
                 else{
-                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)] = std::make_pair(1, NSDist);
+                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)] = std::make_pair(1, VTargetCDist);
                 }
             }
         }
