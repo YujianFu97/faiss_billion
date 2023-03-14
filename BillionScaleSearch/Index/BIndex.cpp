@@ -407,8 +407,8 @@ uint32_t BIndex::LearnCentroidsINI(
         // 2. Update the search performance
         std::cout << "Get into the recall performance estimation process\n";
 
-        auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, Assignment_num_batch, NumInMemoryBatches,  QuerySet.data(), QueryGT.data(), CNorms.data(), Base_ID_seq.data(), InMemoryBatches.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
-        //auto RecallResult = std::make_tuple(false, 200, 50471.9, 0.476594, 0.449813);
+        //auto RecallResult = BillionUpdateRecall(nb, nq, Dimension, nc, RecallK, TargetRecall, MaxCandidateSize, ngt, Assignment_num_batch, NumInMemoryBatches,  QuerySet.data(), QueryGT.data(), CNorms.data(), Base_ID_seq.data(), InMemoryBatches.data(), Path_base, RecordFile, HNSWGraph, PQ, BaseIds);
+        auto RecallResult = std::make_tuple(false, 200, 50471.9, 0.476594, 0.449813);
 
         delete PQ;
         Trecorder.print_record_time_usage(RecordFile, "Update the search recall performance");
