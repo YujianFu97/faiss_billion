@@ -1635,12 +1635,12 @@ void BillionUpdateCentroids(
                 }
             }
         }
-        exit(0);
+        
     }
     BaseInput.close();
     std::cout << "The number of training vectors to be loaded: " << ClusterTrainSize << " The number of vectors loaded: " << NumLoadedVectors << "\n";
     assert(ClusterTrainSize == NumLoadedVectors);
-
+    exit(0);
 
 #pragma omp parallel for 
     for (size_t i = 0; i < NCBatch; i++){ 

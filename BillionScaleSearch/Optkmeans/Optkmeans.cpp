@@ -522,7 +522,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     }
 
     // This is the number of clusters to be considered in searching NN
-    size_t NeighborNum = 10; assert(NeighborNum <= ClusterBoundSize);
+    size_t NeighborNum = 20; assert(NeighborNum <= ClusterBoundSize);
     std::vector<uint32_t> NeighborClusterID(TrainSize * NeighborNum);
     std::vector<float> NeighborClusterDist(TrainSize * NeighborNum);
     for (size_t i = 0; i < TrainSize; i++){
