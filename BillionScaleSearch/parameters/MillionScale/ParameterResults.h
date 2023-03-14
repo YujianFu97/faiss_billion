@@ -41,7 +41,7 @@ size_t EfConstruction = 100;
 //For PS
 size_t IniM = 30000;
 size_t MaxM = 100000;
-size_t ClusterBoundSize = 200;
+size_t ClusterBoundSize = 50;
 size_t CheckBatch = 1000;
 size_t Verbose = true;
 size_t PQ_TrainSize_PS = 10000; 

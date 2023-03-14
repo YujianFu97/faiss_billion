@@ -443,8 +443,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             size_t iterations, bool keeptrainlabels, 
             uint32_t * trainlabels, float * traindists){
     
-    // This is the number of clusters to be considered in groundtruth
-    size_t NeighborNum = 1;
+
     // The number of groundtruth to be considered
     size_t RecallK = 2;
     bool Visualize = false;    prop = 0;
@@ -468,19 +467,19 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     // Firstly train the index with original kmeans and then compute the neighbor info
 
     // Prepare the neighbor info
-    std::vector<uint32_t> NeighborClusterID(TrainSize * NeighborNum);
-    std::vector<float> NeighborClusterDist(TrainSize * NeighborNum);
+    std::vector<uint32_t> NeighborClusterIDBound(TrainSize * ClusterBoundSize);
+    std::vector<float> NeighborClusterDistBound(TrainSize * ClusterBoundSize);
     std::vector<std::vector<uint32_t>> TrainIDs(nc);
     std::vector<std::vector<uint32_t>> TrainBeNNs(TrainSize); // The vectors that takes the target vectors as NN
 
     hierarkmeans(TrainSet, Dimension, TrainSize, nc, Centroids, NLevel, Optimize, UseGraph, OptSize, lambda, iterations);
     Trecorder.print_time_usage("Train the centroids with hierarchical kmeans");
-    GraphSearch(NeighborClusterID.data(), NeighborClusterDist.data(), TrainSet, Centroids, TrainSize, nc, NeighborNum, Dimension);
+    GraphSearch(NeighborClusterIDBound.data(), NeighborClusterDistBound.data(), TrainSet, Centroids, TrainSize, nc, ClusterBoundSize, Dimension);
     Trecorder.print_time_usage("Search the train vectors for further updates");
 
 
     for (size_t i = 0; i < TrainSize; i++){
-        TrainIDs[NeighborClusterID[i * NeighborNum]].emplace_back(i);
+        TrainIDs[NeighborClusterIDBound[i * ClusterBoundSize]].emplace_back(i);
     }
 
     std::vector<float> ClusterSize(nc);
@@ -490,7 +489,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
 
     std::vector<uint32_t> AssignmentID(TrainSize);
     for (size_t i = 0; i < TrainSize; i++){
-        AssignmentID[i] = NeighborClusterID[i * NeighborNum];
+        AssignmentID[i] = NeighborClusterIDBound[i * ClusterBoundSize];
     }
 
     std::vector<int64_t> VectorGt(TrainSize * RecallK);
@@ -499,8 +498,8 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
 #pragma omp parallel for
     for (uint32_t i = 0; i < TrainSize; i++){
         faiss::maxheap_heapify(RecallK, VectorDist.data() + i * RecallK, VectorGt.data() + i * RecallK);
-        for (size_t j = 0; j < NeighborNum; j++){
-            uint32_t ClusterID = NeighborClusterID[i * NeighborNum + j];
+        for (size_t j = 0; j < ClusterBoundSize; j++){
+            uint32_t ClusterID = NeighborClusterIDBound[i * ClusterBoundSize + j];
             for (size_t temp = 0; temp < TrainIDs[ClusterID].size(); temp++){
                 uint32_t VectorID = TrainIDs[ClusterID][temp];
                 if (VectorID == i){
@@ -520,6 +519,15 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
         for (size_t j = 0; j < RecallK; j++){
             TrainBeNNs[VectorGt[i * RecallK + j]].emplace_back(i);
         }
+    }
+
+    // This is the number of clusters to be considered in searching NN
+    size_t NeighborNum = 1; assert(NeighborNum <= ClusterBoundSize);
+    std::vector<uint32_t> NeighborClusterID(TrainSize * NeighborNum);
+    std::vector<float> NeighborClusterDist(TrainSize * NeighborNum);
+    for (size_t i = 0; i < TrainSize; i++){
+        memcpy(NeighborClusterID.data() + i * NeighborNum, NeighborClusterIDBound.data() + i * ClusterBoundSize, NeighborNum * sizeof(uint32_t));
+        memcpy(NeighborClusterDist.data() + i * NeighborNum, NeighborClusterDistBound.data() + i * ClusterBoundSize, NeighborNum * sizeof(float));
     }
 
 /*
