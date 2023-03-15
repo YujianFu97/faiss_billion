@@ -1512,6 +1512,14 @@ std::tuple<bool, size_t, float, float, float, float> BillionUpdateRecall(
         float FinalGt = GtList[ResultIndice];
         std::cout << "The search time on centroids and vectors: |" << Centime << "| |" << Vectime << "|\n";
         if (Result1.first > MinimumCoef && Result2.first > MinimumCoef){
+            RecordFile << "\nClusterNum = [";  for (size_t i = 0; i < ClusterNumList.size(); i++){RecordFile << ClusterNumList[i] << ", ";}
+            RecordFile << "]\nCanlist = [";for (size_t i = 0; i < CanLengthList.size(); i++){RecordFile << CanLengthList[i] << ", ";}
+            RecordFile << "]\nCenTime = [";for (size_t i = 0; i < CenSearchTime.size(); i++){RecordFile << CenSearchTime[i] << ", ";}
+            RecordFile << "]\nVecTime = [";for (size_t i = 0; i < VecSearchTime.size(); i++){RecordFile << VecSearchTime[i] << ", ";}
+            RecordFile << "]\nSumTime = [";for (size_t i = 0; i < VecSearchTime.size(); i++){RecordFile << CenSearchTime[i] + VecSearchTime[i] << ", ";}
+            RecordFile << "]\nRecall = [";for (size_t i = 0; i < GtList.size(); i++){RecordFile << GtList[i] << ", ";}
+            RecordFile << "]\n";
+
             return std::make_tuple(AchieveTargetRecall, ClusterNumList[ResultIndice], CanLengthList[ResultIndice], Centime, Vectime, FinalGt);
         }
         else{
@@ -1615,14 +1623,14 @@ void BillionUpdateCentroids(
 
 
     for (size_t batch_idx = 0; batch_idx < Assignment_num_batch; batch_idx++){
-        std::cout << "Scanning the " << batch_idx << " / " << Assignment_num_batch << " batches to load the training vectors\n";
+        std::cout << "Scanning the " << batch_idx + 1 << " / " << Assignment_num_batch << " batches to load the training vectors\n";
         if (batch_idx < NumInMemoryBatches){
             for (size_t temp = 0; temp < Assignment_batch_size * Dimension; temp++){
                 Base_batch[temp] = InMemoryBatches[batch_idx * Assignment_batch_size * Dimension + temp];
             }
         }
         else{
-            std::cout << "Loading the " << batch_idx << " / " << Assignment_num_batch << " batches from disk\n";
+            std::cout << "Loading the " << batch_idx + 1 << " / " << Assignment_num_batch << " batches from disk\n";
             BaseInput.seekg(batch_idx * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
             readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
         }
@@ -1637,7 +1645,6 @@ void BillionUpdateCentroids(
                 }
             }
         }
-        
     }
     BaseInput.close();
     std::cout << "The number of training vectors to be loaded: " << ClusterTrainSize << " The number of vectors loaded: " << NumLoadedVectors << "\n";

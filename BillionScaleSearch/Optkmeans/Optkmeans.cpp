@@ -436,8 +436,8 @@ void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize,
 }
 
 // Kmeans training with neighbor info for optimization
-std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
-            float * Centroids, bool verbose, bool Optimize, 
+std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
+            float * Centroids, bool verbose, bool Optimize, std::vector<std::vector<uint32_t>> & TrainIds, std::vector<std::vector<uint32_t>>  & VectorOutIDs,
             float lambda, size_t OptSize, bool UseGraph, 
             size_t iterations,
             uint32_t * trainlabels, float * traindists){
@@ -467,7 +467,6 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     // Prepare the neighbor info
     std::vector<uint32_t> NeighborClusterIDBound(TrainSize * ClusterBoundSize);
     std::vector<float> NeighborClusterDistBound(TrainSize * ClusterBoundSize);
-    std::vector<std::vector<uint32_t>> TrainIDs(nc);
     std::vector<std::vector<uint32_t>> TrainBeNNs(TrainSize); // The vectors that takes the target vectors as NN
 
     hierarkmeans(TrainSet, Dimension, TrainSize, nc, Centroids, NLevel, Optimize, UseGraph, OptSize, lambda, iterations);
@@ -477,12 +476,12 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
 
 
     for (size_t i = 0; i < TrainSize; i++){
-        TrainIDs[NeighborClusterIDBound[i * ClusterBoundSize]].emplace_back(i);
+        TrainIds[NeighborClusterIDBound[i * ClusterBoundSize]].emplace_back(i);
     }
 
     std::vector<float> ClusterSize(nc);
     for (size_t i = 0; i < nc; i++){
-        ClusterSize[i] = TrainIDs[i].size();
+        ClusterSize[i] = TrainIds[i].size();
     }
 
     for (size_t i = 0; i < TrainSize; i++){
@@ -498,8 +497,8 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
         faiss::maxheap_heapify(RecallK, VectorDist.data() + i * RecallK, VectorGt.data() + i * RecallK);
         for (size_t j = 0; j < ClusterBoundSize; j++){
             uint32_t ClusterID = NeighborClusterIDBound[i * ClusterBoundSize + j];
-            for (size_t temp = 0; temp < TrainIDs[ClusterID].size(); temp++){
-                uint32_t VectorID = TrainIDs[ClusterID][temp];
+            for (size_t temp = 0; temp < TrainIds[ClusterID].size(); temp++){
+                uint32_t VectorID = TrainIds[ClusterID][temp];
                 if (VectorID == i){
                     continue;
                 }
@@ -598,13 +597,22 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
 */
 
     // Check the conflict number of boundary and update the maximum distance to the boundary
-    std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> BoundaryConflictMap;
+    // Struct: <<TargetCluster, NNCluster>, <NumSourceVector, BoundaryDist, NumSavedVectors>>
+    std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> BoundaryConflictMap;
     for (size_t i = 0; i < 5; i++){
         auto result = neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, Visualize, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), trainlabels, traindists, NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
     }
 
+    // Save the origin cluster of the shift vectors, for further base vector assignment
+    for (uint32_t i = 0; i < TrainSize; i++){
+        if (trainlabels[i] != NeighborClusterIDBound[i * ClusterBoundSize]){
+            VectorOutIDs[NeighborClusterIDBound[i * ClusterBoundSize]].emplace_back(i);
+        }
+    }
+
     // Check the boundary conflict status
     for (size_t i = 0; i < TrainSize; i++){
+        bool ExistFlag = false;
         for (size_t j = 0; j < RecallK; j++){
             uint32_t TargetClusterID = trainlabels[i];
             uint32_t NNClusterID = trainlabels[VectorGt[i * RecallK + j]];
@@ -625,18 +633,50 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
                 
                 auto result = BoundaryConflictMap.find(std::make_pair(TargetClusterID, NNClusterID));
                 if (result != BoundaryConflictMap.end()){
-                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].first ++;
-                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second = BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second > VTargetCDist ? BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)].second : VTargetCDist;
+                    if (!ExistFlag){
+                        std::get<0>(BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)])++;
+                        ExistFlag = true;  // For multiple boundary conflict from the same vetor, we only consider once
+                    }
+                    std::get<1>(BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)]) = std::get<1>(BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)]) > VTargetCDist ? std::get<1>(BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)]): VTargetCDist;
                 }
                 else{
-                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)] = std::make_pair(1, VTargetCDist);
+                    BoundaryConflictMap[std::make_pair(TargetClusterID, NNClusterID)] = std::make_tuple(1, VTargetCDist, 0);
                 }
             }
         }
     }
-
-
     Trecorder.print_time_usage("Make the boundary conflict map for return");
+
+    for (uint32_t i = 0; i < nc; i++){TrainIds[i].resize(0);}
+    for (uint32_t i = 0; i < TrainSize; i++){TrainIds[trainlabels[i]].emplace_back(i);}
+
+
+    for (auto it = BoundaryConflictMap.begin(); it != BoundaryConflictMap.end(); it++){
+        uint32_t NNClusterID = (*it).first.second;
+        uint32_t TargetClusterID = (*it).first.first;
+        float BoundaryDist =  std::get<1>((*it).second);
+        size_t NNClusterSize = TrainIds[NNClusterID].size();
+        size_t InBoundaryNum = 0;
+
+        for (size_t i = 0; i < NNClusterSize; i++){
+            uint32_t VectorID = TrainIds[NNClusterID][i];
+            float TargetVectorDist = -1;
+            for (size_t j = 0; j < ClusterBoundSize; j++){
+                if (NeighborClusterIDBound[VectorID * ClusterBoundSize + j] == TargetClusterID){
+                    TargetVectorDist = NeighborClusterDistBound[VectorID * ClusterBoundSize + j];
+                    break; 
+                }
+            }
+            if (TargetVectorDist < 0){
+                TargetVectorDist = faiss::fvec_L2sqr(TrainSet + VectorID * Dimension, Centroids + TargetClusterID * Dimension, Dimension);
+            }
+            if (TargetVectorDist <= BoundaryDist){
+                InBoundaryNum ++;
+            }
+        }
+        std::get<2>((*it).second) = NNClusterSize - InBoundaryNum; // This is the number of vectors that can be saved with each neighbor conflict
+    }
+
     return BoundaryConflictMap;
 }
 
