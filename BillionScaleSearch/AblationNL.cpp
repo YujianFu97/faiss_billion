@@ -43,6 +43,7 @@ int main(){
         float VectorDist = std::numeric_limits<float>::max();
         for (size_t j = 0; j < ClusterNum; j++){
             uint32_t ClusterID = result.top().second;
+            
             size_t ClusterSize = TrainIds[ClusterID].size();
             std::vector<float> ClusterVectorDist(ClusterSize);
             for (size_t k = 0; k < ClusterSize; k++){
@@ -56,13 +57,27 @@ int main(){
         }
     }
 
-    // Build the neighbor list for index
-    auto comp = [](std::tuple<float, uint32_t, uint32_t> Element1, std::tuple<float, uint32_t, uint32_t> Element2){return std::get<0>(Element1) < std::get<0>(Element2);};
-    std::priority_queue<std::tuple<float, uint32_t, uint32_t>, std::vector<std::tuple<float, uint32_t, uint32_t>>, decltype(comp)> NeighborListQueue(comp);
-    for (auto it = NeighborConflictMap.begin(); it != NeighborConflictMap.end(); it++){
-        //NeighborListQueue.emplace(std::make_tuple())
+    std::vector<std::vector<uint32_t>> BaseIds(nc);
+    for (uint32_t i = 0; i < nb; i++){
+        BaseIds[BaseIDSeq[i]].emplace_back(i);
     }
 
+    // Build the neighbor list for index
+    auto comp = [](std::tuple<float, float, uint32_t, uint32_t> Element1, std::tuple<float, float, uint32_t, uint32_t> Element2){return std::get<0>(Element1) < std::get<0>(Element2);};
+    std::priority_queue<std::tuple<float, float, uint32_t, uint32_t>, std::vector<std::tuple<float, float, uint32_t, uint32_t>>, decltype(comp)> NeighborListQueue(comp);
+    for (auto it = NeighborConflictMap.begin(); it != NeighborConflictMap.end(); it++){
 
+        uint32_t NeighborClusterID = (*it).first.second;
+        uint32_t OriginClusterID = (*it).first.first;
+        size_t NeighborListSize = 0;
+        for (size_t i = 0; i < BaseIds[NeighborClusterID].size(); i++){
+            float OriginDist = faiss::fvec_L2sqr(BaseSet.data() + BaseIds[NeighborClusterID][i] * Dimension, Centroids.data() + OriginClusterID * Dimension, Dimension);
+            if (OriginDist <= (*it).second.second){
+                NeighborListSize ++;
+            }
+        }
 
+        // Todo: how to decide the clusters for neighbor list, we should use the data in trainset
+        NeighborListQueue.emplace(std::make_tuple( (*it).second.first * (TrainIds[NeighborClusterID].size() - NeighborListSize), (*it).second.second, (*it).first.first, (*it).first.second));
+    }
 }

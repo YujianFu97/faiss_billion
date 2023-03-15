@@ -338,7 +338,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
     // 6. Build the inverted index for base vectors
     bool ContinueSplit = true;
-    std::vector<size_t> NCRecord; std::vector<float> CenTimeRecord; std::vector<float> VecTimeRecord; std::vector<float> NumClusterRecord; std::vector<float> CansizeRecord;
+    std::vector<size_t> NCRecord; std::vector<float> CenTimeRecord; std::vector<float> VecTimeRecord; std::vector<float> NumClusterRecord; std::vector<float> CansizeRecord; std::vector<float> GtRecord;
     std::vector<float> ClusterVectorCost;
 
     auto comp = [](std::pair<float, uint32_t> Element1, std::pair<float, uint32_t> Element2){return Element1.first < Element2.first;};
@@ -355,7 +355,7 @@ uint32_t BIndex::LearnCentroidsINI(
         CNorms.resize(nc);
 
         std::string Path_cen_norm = Path_folder_recall + "Centroids_" + std::to_string(nc)+".norm";
-///*
+/*
         if (!Retrain && exists(Path_cen_norm)){
             std::ifstream CenNormInput(Path_cen_norm, std::ios::binary);
             size_t nc_r;
@@ -365,22 +365,22 @@ uint32_t BIndex::LearnCentroidsINI(
             CenNormInput.close();
         }
         else{
-//*/
+*/
             std::ofstream CenNormOutput(Path_cen_norm, std::ios::binary);
             faiss::fvec_norms_L2sqr(CNorms.data(), Centroids.data(), Dimension, nc);
             CenNormOutput.write((char * ) & nc, sizeof(size_t));
             CenNormOutput.write((char * ) CNorms.data(), nc * sizeof(float));
             CenNormOutput.close();
-        }
+//        }
 
         // 1.2. Build PQ quantizer with the constructed centroids and the a subset of the baseset, Save the PQ quantizer to disk for further evaluation
         std::string Path_PQ = Path_folder_recall + "PQ_" + std::to_string(nc)+"_"+std::to_string(PQ_M) + "_" + std::to_string(nbits)+".pq";
-///*
+/*
         if (!Retrain && exists(Path_PQ)){
             PQ = faiss::read_ProductQuantizer(Path_PQ.c_str());
         }
         else{
-//*/
+*/
             for (size_t i = 0; i < PQ_TrainSize; i++){
                 uint32_t ClusterID = Base_ID_seq[RandomId[i]];
                 faiss::fvec_madd(Dimension, TrainSet.data() + i * Dimension, -1.0,  HNSWGraph->getDataByInternalId(ClusterID), SubResidual.data() + i * Dimension);
@@ -400,7 +400,7 @@ uint32_t BIndex::LearnCentroidsINI(
             }
             std::cout << "\n\n\n";
 */
-        }
+//        }
 
         Trecorder.print_record_time_usage(RecordFile, "Train the PQ quantizer");
 
@@ -415,7 +415,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
         // 3.1. Check the search performance and determine whether the centroids should be splitted and report the search performance
         float PerTime = std::get<3>(RecallResult) + std::get<4>(RecallResult);
-        NCRecord.emplace_back(nc); CenTimeRecord.emplace_back(std::get<3>(RecallResult)); VecTimeRecord.emplace_back(std::get<4>(RecallResult)); CansizeRecord.emplace_back(std::get<2>(RecallResult));
+        NCRecord.emplace_back(nc); CenTimeRecord.emplace_back(std::get<3>(RecallResult)); VecTimeRecord.emplace_back(std::get<4>(RecallResult)); CansizeRecord.emplace_back(std::get<2>(RecallResult)); GtRecord.emplace_back(std::get<5>(RecallResult));
         RecordFile << "\nThis is index with |" << nc << "| centroids with search time: |" << PerTime << "| PerCentroidTime: |" << std::get<3>(RecallResult) << "| Per Vecor Time: |" << std::get<4>(RecallResult) <<  "| ClusterNum: " << std::get<1>(RecallResult) << " Candidate List Size: " << std::get<2>(RecallResult) << std::endl;
         std::cout << "\nThis is index with |" << nc << "| centroids with search time: |" << PerTime << "| PerCentroidTime: |" << std::get<3>(RecallResult) << "| Per Vecor Time: |" << std::get<4>(RecallResult) << "| ClusterNum: " << std::get<1>(RecallResult) << " Candidate List Size: " << std::get<2>(RecallResult) << std::endl;
 
@@ -424,6 +424,7 @@ uint32_t BIndex::LearnCentroidsINI(
         RecordFile << "]\nCenTime = [";for (size_t i = 0; i < CenTimeRecord.size(); i++){RecordFile << CenTimeRecord[i] << ", ";}
         RecordFile << "]\nVecTime = [";for (size_t i = 0; i < VecTimeRecord.size(); i++){RecordFile << VecTimeRecord[i] << ", ";}
         RecordFile << "]\nSumTime = [";for (size_t i = 0; i < VecTimeRecord.size(); i++){RecordFile << CenTimeRecord[i] + VecTimeRecord[i] << ", ";}
+        RecordFile << "]\Recall = [";for (size_t i = 0; i < GtRecord.size(); i++){RecordFile << GtRecord[i] << ", ";}
         RecordFile << "]\n";
 
         // 3.2. Check the quality of centroids

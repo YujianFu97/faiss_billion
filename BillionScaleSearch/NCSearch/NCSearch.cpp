@@ -1184,7 +1184,7 @@ std::string PathTrainsetLabel, size_t Dimension, size_t TrainSize, float TargetR
 // The section for changing the ClusterNum
 // Input parameters: (1) scalar value (2) data vector (3) path (4) point, data structure
 
-std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
+std::tuple<bool, size_t, float, float, float, float> BillionUpdateRecall(
     size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt, size_t Assignment_num_batch, size_t NumInMemoryBatches,
     float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, uint32_t * Base_ID_seq, DataType * InMemoryBatches,
     std::string Path_base, 
@@ -1251,10 +1251,10 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         }
         else{
             BaseInput.seekg(batch_idx * Assignment_batch_size * (Dimension * sizeof(DataType) + sizeof(uint32_t)), std::ios::beg);
-            readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, false, false);
+            readXvecFvec<DataType>(BaseInput, Base_batch.data(), Dimension, Assignment_batch_size, true, true);
         }
-        
-        TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(batch_idx + 1) + " / " + std::to_string(Assignment_num_batch) + " batch");
+
+        TRecorder.print_record_time_usage(RecordFile, "Load the " + std::to_string(batch_idx + 1) + " / " + std::to_string(Assignment_num_batch) + " batch with " + std::to_string(Assignment_batch_size) + " vectors");
 #pragma omp parallel for
         for (size_t j = 0; j < Assignment_batch_size; j++){
             uint32_t ClusterLabel = Base_ID_seq[batch_idx * Assignment_batch_size + j];
@@ -1288,6 +1288,7 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         std::vector<float> CanLengthList;
         std::vector<float> CenSearchTime;
         std::vector<float> VecSearchTime;
+        std::vector<float> GtList;
 
         bool AchieveTargetRecall = true;
         bool UpdateClusterNum = true;
@@ -1449,10 +1450,10 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
             RecordFile << "'Numcluster: " << ClusterNum << " Cluster Batch: " << ClusterBatch << " Visited num of GT in top " << RecallK << " NN: " << (VisitedGt) / nq << " Candidate List Size: " << (VisitedVec) / nq <<  " / " << MaxCandidateSize << " Target recall: "<< TargetRecall  << " Search Time: " << (TRecorder.TempDuration1 + TRecorder.TempDuration2 + TRecorder.TempDuration3) / (nq * 1000) << " Cen Search Time: " <<  TRecorder.TempDuration1 / (nq * 1000) << " Table time: " <<  TRecorder.TempDuration2 / (nq * 1000) << " Vec Search Time: " << TRecorder.TempDuration3 / (nq * 1000)  << " with repeat times: " << RepeatTimes << " / " << MaxRepeatTimes << "',\n";
 
             //std::cout << "6: \n";
-            ClusterNumList.emplace_back(ClusterNum); CanLengthList.emplace_back((VisitedVec) / nq); CenSearchTime.emplace_back(TRecorder.TempDuration1 / (nq * 1000)); VecSearchTime.emplace_back(TRecorder.TempDuration3 / (nq * 1000));
+            ClusterNumList.emplace_back(ClusterNum); CanLengthList.emplace_back((VisitedVec) / nq); CenSearchTime.emplace_back(TRecorder.TempDuration1 / (nq * 1000)); VecSearchTime.emplace_back(TRecorder.TempDuration3 / (nq * 1000)); GtList.emplace_back(VisitedGt / nq);
 
             // Determine how should the clusternum change
-            if (ClusterNum >= MaxClusterNum && VisitedGt / nq < TargetRecall){
+            if (VisitedVec / nq > MaxCandidateSize && VisitedGt / nq < TargetRecall){
                 UpdateClusterNum = false;
                 AchieveTargetRecall = false;
             }
@@ -1508,16 +1509,17 @@ std::tuple<bool, size_t, float, float, float> BillionUpdateRecall(
         if (ResultIndice < 0){ResultIndice = CanLengthList.size() - 1;} assert(ClusterNumList[ResultIndice] == ClusterNum);
         float Centime = Result1.second.first * ClusterNumList[ResultIndice] + Result1.second.second;
         float Vectime = Result2.second.first * CanLengthList[ResultIndice] + Result2.second.second;
+        float FinalGt = GtList[ResultIndice];
         std::cout << "The search time on centroids and vectors: |" << Centime << "| |" << Vectime << "|\n";
         if (Result1.first > MinimumCoef && Result2.first > MinimumCoef){
-            return std::make_tuple(AchieveTargetRecall, ClusterNumList[ResultIndice], CanLengthList[ResultIndice], Centime, Vectime);
+            return std::make_tuple(AchieveTargetRecall, ClusterNumList[ResultIndice], CanLengthList[ResultIndice], Centime, Vectime, FinalGt);
         }
         else{
             RecordFile << "Regression failed with " << Result1.first << " and " << Result2.first << ", repeat the time estimation process\n\n";
             std::cout << "Regression failed with " << Result1.first << " and " << Result2.first << ", repeat the time estimation process\n\n";
         }
     }
-    return std::make_tuple(0, 0, 0, 0, 0); 
+    return std::make_tuple(0, 0, 0, 0, 0, 0); 
 }
 
 

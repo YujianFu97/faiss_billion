@@ -441,7 +441,6 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             float lambda, size_t OptSize, bool UseGraph, 
             size_t iterations,
             uint32_t * trainlabels, float * traindists){
-    
 
     // The number of groundtruth to be considered
     size_t RecallK = 2;
@@ -603,7 +602,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
     for (size_t i = 0; i < 5; i++){
         auto result = neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, Visualize, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), trainlabels, traindists, NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
     }
-    
+
     // Check the boundary conflict status
     for (size_t i = 0; i < TrainSize; i++){
         for (size_t j = 0; j < RecallK; j++){
@@ -635,6 +634,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::pair<size_t, float>> neighborkmeans
             }
         }
     }
+
 
     Trecorder.print_time_usage("Make the boundary conflict map for return");
     return BoundaryConflictMap;
