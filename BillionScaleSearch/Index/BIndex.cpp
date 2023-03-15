@@ -424,7 +424,7 @@ uint32_t BIndex::LearnCentroidsINI(
         RecordFile << "]\nCenTime = [";for (size_t i = 0; i < CenTimeRecord.size(); i++){RecordFile << CenTimeRecord[i] << ", ";}
         RecordFile << "]\nVecTime = [";for (size_t i = 0; i < VecTimeRecord.size(); i++){RecordFile << VecTimeRecord[i] << ", ";}
         RecordFile << "]\nSumTime = [";for (size_t i = 0; i < VecTimeRecord.size(); i++){RecordFile << CenTimeRecord[i] + VecTimeRecord[i] << ", ";}
-        RecordFile << "]\Recall = [";for (size_t i = 0; i < GtRecord.size(); i++){RecordFile << GtRecord[i] << ", ";}
+        RecordFile << "]\nRecall = [";for (size_t i = 0; i < GtRecord.size(); i++){RecordFile << GtRecord[i] << ", ";}
         RecordFile << "]\n";
 
         // 3.2. Check the quality of centroids
