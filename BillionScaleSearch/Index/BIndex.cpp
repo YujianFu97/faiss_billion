@@ -567,8 +567,6 @@ uint32_t BIndex::LearnCentroidsINI(
     CenNormInput.read((char * ) & nc, sizeof(size_t)); assert(nc == std::stoul(OptString[3]));
     CenNormInput.read((char * ) CNorms.data(), nc * sizeof(float));
     CenNormInput.close();
-    
-    
 
 /*
     for (size_t i = 0; i < nc; i++){
@@ -592,6 +590,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
     BaseIDInput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
     BaseIDInput.close();
+    exit(0);
     
     for (uint32_t i = 0; i < nb; i++){
         BaseIds[Base_ID_seq[i]].emplace_back(i);
@@ -605,7 +604,7 @@ uint32_t BIndex::LearnCentroidsINI(
     std::cout << "Save Base code file to: " << Path_base_code << " \nSave Base norm file to: " << Path_base_norm << "\n";
 
     Retrain = false;
-    exit(0);
+    
 
     QuantizeBaseset(Assignment_num_batch, Assignment_batch_size, Path_base, OptString[24], Path_base_code, Path_base_norm);
     return nc;
@@ -1204,7 +1203,7 @@ size_t NumRecall, size_t NumPara, size_t * RecallK, size_t * MaxItem, size_t * E
     std::ifstream GTInput(PathGt, std::ios::binary);
     readXvec<uint32_t>(GTInput, GT.data(), ngt, nq, true, true);
     std::ifstream QueryInput(PathQuery, std::ios::binary);
-    readXvecFvec<float>(QueryInput, Query.data(), Dimension, nq, true, true);
+    readXvecFvec<DataType>(QueryInput, Query.data(), Dimension, nq, true, true);
     GTInput.close(); QueryInput.close();
     std::string SearchMode = "NonParallel";
 

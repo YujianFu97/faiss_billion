@@ -148,6 +148,7 @@ int main(){
     std::ifstream QueryInput(PathQuery, std::ios::binary);
     std::ifstream GtInput(PathGt, std::ios::binary);
     readXvecFvec<DataType> (QueryInput, QuerySet.data(), Dimension, nq, true, true);
+    readXvec<uint32_t> (GtInput, GTSet.data(), ngt, nq, true, true);
 
     for (size_t ParaIdx = 0; ParaIdx < NumPara; ParaIdx++){
         for (size_t i = 0; i < nq; i++){
@@ -162,6 +163,8 @@ int main(){
             // Check the vectors in the neighbor cluster (not in the neighbor list) and the vectors in the neighbor list
             uint32_t TargetClusterID = ClusterID[0];
             for (size_t j = 0; j < BaseIds[TargetClusterID].size(); j++){
+                if 
+
                 
             }
 
