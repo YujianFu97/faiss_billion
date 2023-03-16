@@ -156,8 +156,9 @@ int main(){
         size_t TargetRecall = 10;
         for (size_t i = 0; i < nq; i++){
             for (size_t j = 0; j < TargetRecall; j++){
-                GTSets[j].insert(GTSet[i * ngt + j]);
+                GTSets[i].insert(GTSet[i * ngt + j]);
             }
+            
             size_t VisitedGt = 0;
             std::vector<uint32_t> ClusterID(EfSearch[ParaIdx]);
             std::vector<float> ClusterDist(EfSearch[ParaIdx]);
@@ -168,11 +169,14 @@ int main(){
             }
             // Check the vectors in the neighbor cluster (not in the neighbor list) and the vectors in the neighbor list
             uint32_t TargetClusterID = ClusterID[0];
+            // For the target cluster, search all vectors in the cluster
             for (size_t j = 0; j < BaseIds[TargetClusterID].size(); j++){
-                if ()
-
-                
+                if (GTSets[i].count(BaseIds[TargetClusterID][j]) != 0){
+                    VisitedGt ++;
+                }
             }
+
+            // For the other clusters, if there is 
 
         }
     }

@@ -567,6 +567,7 @@ uint32_t BIndex::LearnCentroidsINI(
     CenNormInput.read((char * ) & nc, sizeof(size_t)); assert(nc == std::stoul(OptString[3]));
     CenNormInput.read((char * ) CNorms.data(), nc * sizeof(float));
     CenNormInput.close();
+    Trecorder.print_record_time_usage(RecordFile, "Load the centroid norms");
 
 /*
     for (size_t i = 0; i < nc; i++){
@@ -580,6 +581,7 @@ uint32_t BIndex::LearnCentroidsINI(
     std::cout << "Load Product quantizer file from: " << OptString[9] << "\n";
     assert(exists(OptString[9]));
     PQ = faiss::read_ProductQuantizer(OptString[9].c_str());
+    Trecorder.print_record_time_usage(RecordFile, "Load the product quantizer");
     
 
     // Load the base ID and transfer to inverted index
@@ -590,10 +592,12 @@ uint32_t BIndex::LearnCentroidsINI(
 
     BaseIDInput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
     BaseIDInput.close();
+    Trecorder.print_record_time_usage(RecordFile, "Load the base Ids in sequence");
     
     for (uint32_t i = 0; i < nb; i++){
         BaseIds[Base_ID_seq[i]].emplace_back(i);
     }
+    Trecorder.print_record_time_usage(RecordFile, "Constuct the inverted index of Ids");
 
     // Quantize the base vectors to vector code and save tthe code to index
 
@@ -851,7 +855,7 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
     std::ifstream BaseIDSeqInput(PathBaseIDSeq, std::ios::binary);
     std::vector<uint32_t> BaseSetID(BatchSize);
     std::cout << "Quantizing the base vectors " << std::endl;
-    exit(0);
+    
 
 /*
     std::vector<float> BaseSetTest(nb * Dimension);
@@ -872,6 +876,7 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
         readXvecFvec<DataType>(BaseInput, BaseSet.data(), Dimension, BatchSize, true, true);
         BaseIDSeqInput.read((char *)BaseSetID.data(), BatchSize * sizeof(uint32_t));
         QuantizeVector(BatchSize, BaseSet.data(), BaseSetID.data(), BaseCodes.data() + i * BatchSize * PQ->code_size, BaseNorms.data() + i * BatchSize, OPQCentroids.data());
+        exit(0);
     }
 
     std::ofstream BaseCodeOutput(PathBaseCode, std::ios::binary);
