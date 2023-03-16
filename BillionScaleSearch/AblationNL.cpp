@@ -64,6 +64,7 @@ int main(){
         NeighborListQueue.pop();
     }
 
+/*
     for(auto result = NeighborListMapNNCluster.begin(); result != NeighborListMapNNCluster.end(); result++){
         std::cout << " | " << (*result).first  << ": ";
         for (auto it = (*result).second.begin(); it != (*result).second.end(); it++){
@@ -71,12 +72,16 @@ int main(){
         }
     }
     exit(0);
+*/
 
     std::map<std::pair<uint32_t, uint32_t>, std::vector<uint32_t>> NeighborList;
 
     // Assignment of the base vectors: find the nearest trainset vectors
     hnswlib::HierarchicalNSW * GraphHNSW = new hnswlib::HierarchicalNSW(Dimension, nc, M, 2*M, EfConstruction); for (size_t i = 0; i < nc; i++){GraphHNSW->addPoint(Centroids.data() + i * Dimension);}
     std::vector<float> BaseSet(nb * Dimension);
+    std::ifstream BaseInput(PathBase, std::ios::binary);
+    readXvecFvec<DataType>(BaseInput, BaseSet.data(), Dimension, nb, true, true);
+
     std::vector<uint32_t> BaseIDSeq(nb);
     std::vector<std::vector<uint32_t>> BaseNListSeq(nb);
 
@@ -140,6 +145,18 @@ int main(){
         }
     }
 
+/*
+    for(size_t i = 0; i < 1000; i++){
+        
+        std::cout << i << ": ";
+        for (size_t j = 0; j < BaseNListSeq[i].size(); j++){
+            std::cout << BaseNListSeq[i][j] << " ";
+        }
+        std::cout << "|";
+    }
+    exit(0);
+*/
+
     for (uint32_t i = 0; i < nb; i++){
         size_t NumVectorList = BaseNListSeq[i].size();
         for (size_t j = 0; j < NumVectorList; j++){
@@ -154,6 +171,20 @@ int main(){
         }
     }
 
+/*
+    size_t SumVectors = 0;
+    for (auto it = NeighborList.begin(); it != NeighborList.end(); it++){
+        size_t ListSize = (*it).second.size();
+        std::cout << "\n|" << (*it).first.first << " " << (*it).first.second << " : ";
+        for (size_t i = 0; i < ListSize; i++){
+            std::cout << (*it).second[i] << " ";
+        }
+        SumVectors += ListSize;
+    }
+    std::cout << "The total number of lists: " << NeighborList.size() << " The total number of vectors in neighbor lists: " << SumVectors << "\n";
+    exit(0);
+*/
+
     std::vector<std::vector<uint32_t>> BaseIds(nc);
     for (uint32_t i = 0; i < nb; i++){
         BaseIds[BaseIDSeq[i]].emplace_back(i);
@@ -164,23 +195,28 @@ int main(){
     std::vector<uint32_t> GTSet(ngt * nq);
     std::ifstream QueryInput(PathQuery, std::ios::binary);
     std::ifstream GtInput(PathGt, std::ios::binary);
-    std::vector<std::unordered_set<uint32_t>> GTSets(nq);
+    
     readXvecFvec<DataType> (QueryInput, QuerySet.data(), Dimension, nq, true, true);
     readXvec<uint32_t> (GtInput, GTSet.data(), ngt, nq, true, true);
 
+    size_t TargetK = 10;
+
     for (size_t ParaIdx = 0; ParaIdx < NumPara; ParaIdx++){
-        size_t TargetK = 10;
         float SumVisitedGt = 0;
         float SumVisitedVec = 0;
+        std::cout << "Search " << EfSearch[ParaIdx] << " number of clusters \n";
         for (size_t i = 0; i < nq; i++){
+
+            std::unordered_set<uint32_t> GT;
             for (size_t j = 0; j < TargetK; j++){
-                GTSets[i].insert(GTSet[i * ngt + j]);
+                GT.insert(GTSet[i * ngt + j]);
             }
-            
+
             size_t VisitedGt = 0;
             std::vector<uint32_t> ClusterID(EfSearch[ParaIdx]);
             std::vector<float> ClusterDist(EfSearch[ParaIdx]);
-            auto result = GraphHNSW->searchBaseLayer(QuerySet.data() + i * Dimension, EfSearch[ParaIdx]);
+            auto result = GraphHNSW->searchKnn(QuerySet.data() + i * Dimension, EfSearch[ParaIdx]);
+
             for (size_t j = 0; j < EfSearch[ParaIdx]; j++){
                 ClusterID[EfSearch[ParaIdx] - j - 1] = result.top().second;
                 ClusterDist[EfSearch[ParaIdx] - j - 1] = result.top().first;
@@ -189,7 +225,7 @@ int main(){
             uint32_t TargetClusterID = ClusterID[0];
             // For the target cluster, search all vectors in the cluster
             for (size_t j = 0; j < BaseIds[TargetClusterID].size(); j++){
-                if (GTSets[i].count(BaseIds[TargetClusterID][j]) != 0){
+                if (GT.count(BaseIds[TargetClusterID][j]) != 0){
                     VisitedGt ++;
                 }
                 SumVisitedVec += BaseIds[TargetClusterID].size();
@@ -202,7 +238,7 @@ int main(){
                 if (NeighborList.find(NLIndex) != NeighborList.end()){
                     size_t NeighborListSize = NeighborList[NLIndex].size();
                     for (size_t k = 0; k < NeighborListSize; k++){
-                        if (GTSets[i].count(NeighborList[NLIndex][k]) != 0){
+                        if (GT.count(NeighborList[NLIndex][k]) != 0){
                             VisitedGt ++;
                         }
                     }
@@ -210,15 +246,15 @@ int main(){
                 }
                 else{
                     for (size_t k = 0; k < BaseIds[NNClusterID].size(); j++){
-                        if (GTSets[i].count(BaseIds[NNClusterID][k]) != 0){
+                        if (GT.count(BaseIds[NNClusterID][k]) != 0){
                             VisitedGt ++;
                         }
                     }
                     SumVisitedVec += BaseIds[NNClusterID].size();
                 }
             }
-
             SumVisitedGt += VisitedGt;
+            std::cout << "Searching the " << i << " th query\n";
         }
         std::cout << "The average Recall of " << TargetK << " nearest neighbors: " << SumVisitedGt / (nq * TargetK) << " . Number of clusters: " << EfSearch[ParaIdx] << " Number of visited vectors: " << SumVisitedVec / nq << "\n";       
     }
