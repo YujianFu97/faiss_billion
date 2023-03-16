@@ -143,24 +143,32 @@ int main(){
     }
 
     // Search the index with NL
-    std::vector<float> Queries(nq * Dimension);
-    std::vector<uint32_t> GT(ngt * nq);
+    std::vector<float> QuerySet(nq * Dimension);
+    std::vector<uint32_t> GTSet(ngt * nq);
+    std::ifstream QueryInput(PathQuery, std::ios::binary);
+    std::ifstream GtInput(PathGt, std::ios::binary);
+    readXvecFvec<DataType> (QueryInput, QuerySet.data(), Dimension, nq, true, true);
+
     for (size_t ParaIdx = 0; ParaIdx < NumPara; ParaIdx++){
         for (size_t i = 0; i < nq; i++){
+            size_t VisitedGt = 0;
             std::vector<uint32_t> ClusterID(EfSearch[ParaIdx]);
             std::vector<float> ClusterDist(EfSearch[ParaIdx]);
-            auto result = GraphHNSW->searchBaseLayer(Queries.data() + i * Dimension, EfSearch[ParaIdx]);
+            auto result = GraphHNSW->searchBaseLayer(QuerySet.data() + i * Dimension, EfSearch[ParaIdx]);
             for (size_t j = 0; j < EfSearch[ParaIdx]; j++){
                 ClusterID[EfSearch[ParaIdx] - j - 1] = result.top().second;
                 ClusterDist[EfSearch[ParaIdx] - j - 1] = result.top().first;
             }
-
-            
-            
+            // Check the vectors in the neighbor cluster (not in the neighbor list) and the vectors in the neighbor list
+            uint32_t TargetClusterID = ClusterID[0];
+            for (size_t j = 0; j < BaseIds[TargetClusterID].size(); j++){
+                
+            }
 
         }
     }
 
 
-    
+
+
 }

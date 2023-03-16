@@ -554,6 +554,7 @@ uint32_t BIndex::LearnCentroidsINI(
     std::cout << "Load Graph info file from: " << OptString[21] << "\n";
 
     assert(exists(OptString[6])); assert(exists(OptString[17])); assert(exists(OptString[21])); 
+    exit(0);
 
     CentroidHNSW = new hnswlib::HierarchicalNSW(OptString[21], OptString[6], OptString[17]);
     // Load the centroid norms
@@ -564,6 +565,7 @@ uint32_t BIndex::LearnCentroidsINI(
     CenNormInput.read((char * ) & nc, sizeof(size_t)); assert(nc == std::stoul(OptString[3]));
     CenNormInput.read((char * ) CNorms.data(), nc * sizeof(float));
     CenNormInput.close();
+    
 
 /*
     for (size_t i = 0; i < nc; i++){
