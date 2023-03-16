@@ -563,10 +563,11 @@ uint32_t BIndex::LearnCentroidsINI(
     assert(exists(OptString[13]));
     std::ifstream CenNormInput(OptString[13]);
     CNorms.resize(nc);
-    exit(0);
+    
     CenNormInput.read((char * ) & nc, sizeof(size_t)); assert(nc == std::stoul(OptString[3]));
     CenNormInput.read((char * ) CNorms.data(), nc * sizeof(float));
     CenNormInput.close();
+    exit(0);
     
 
 /*
