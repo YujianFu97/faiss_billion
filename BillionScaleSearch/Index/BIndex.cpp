@@ -592,7 +592,7 @@ uint32_t BIndex::LearnCentroidsINI(
 
     BaseIDInput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
     BaseIDInput.close();
-    exit(0);
+    
     for (uint32_t i = 0; i < nb; i++){
         BaseIds[Base_ID_seq[i]].emplace_back(i);
     }
@@ -605,6 +605,7 @@ uint32_t BIndex::LearnCentroidsINI(
     std::cout << "Save Base code file to: " << Path_base_code << " \nSave Base norm file to: " << Path_base_norm << "\n";
 
     Retrain = false;
+    exit(0);
 
     QuantizeBaseset(Assignment_num_batch, Assignment_batch_size, Path_base, OptString[24], Path_base_code, Path_base_norm);
     return nc;
