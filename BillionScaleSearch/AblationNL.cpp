@@ -34,11 +34,18 @@ int main(){
     auto comp = [](std::tuple<size_t, float, uint32_t, uint32_t> Element1, std::tuple<size_t, float, uint32_t, uint32_t> Element2){return std::get<0>(Element1) < std::get<0>(Element2);};
     std::priority_queue<std::tuple<size_t, float, uint32_t, uint32_t>, std::vector<std::tuple<size_t, float, uint32_t, uint32_t>>, decltype(comp)> NeighborListQueue(comp);
     for (auto it = NeighborConflictMap.begin(); it != NeighborConflictMap.end(); it++){
-
         size_t NeighborListSize = 0;
         NeighborListQueue.emplace(std::make_tuple(std::get<0>((*it).second)* std::get<2>((*it).second), std::get<1>((*it).second), (*it).first.first, (*it).first.second ));
     }
 
+/*
+    for(size_t i = 0; i < 1000; i++){
+        auto result = NeighborListQueue.top();
+        std::cout << " | " << std::get<0>(result) << " " <<  std::get<1>(result) << " " <<  std::get<2>(result) << " " <<  std::get<3>(result);
+        NeighborListQueue.pop();
+    }
+    exit(0);
+*/
     size_t MaxNumNeighborList = 10000;
     MaxNumNeighborList = MaxNumNeighborList < NeighborListQueue.size() ? MaxNumNeighborList : NeighborListQueue.size();
     std::map<uint32_t, std::vector<std::pair<uint32_t, float>>> NeighborListMapNNCluster;
@@ -54,7 +61,17 @@ int main(){
         else{
             NeighborListMapNNCluster[NNClusterID] = {std::make_pair(TargetClusterID, std::get<1>(EachList))};
         }
+        NeighborListQueue.pop();
     }
+
+    for(auto result = NeighborListMapNNCluster.begin(); result != NeighborListMapNNCluster.end(); result++){
+        std::cout << " | " << (*result).first  << ": ";
+        for (auto it = (*result).second.begin(); it != (*result).second.end(); it++){
+            std::cout << (*it).first << " " << (*it).second << " ";
+        }
+    }
+    exit(0);
+
     std::map<std::pair<uint32_t, uint32_t>, std::vector<uint32_t>> NeighborList;
 
     // Assignment of the base vectors: find the nearest trainset vectors
@@ -151,11 +168,12 @@ int main(){
     readXvecFvec<DataType> (QueryInput, QuerySet.data(), Dimension, nq, true, true);
     readXvec<uint32_t> (GtInput, GTSet.data(), ngt, nq, true, true);
 
-
     for (size_t ParaIdx = 0; ParaIdx < NumPara; ParaIdx++){
-        size_t TargetRecall = 10;
+        size_t TargetK = 10;
+        float SumVisitedGt = 0;
+        float SumVisitedVec = 0;
         for (size_t i = 0; i < nq; i++){
-            for (size_t j = 0; j < TargetRecall; j++){
+            for (size_t j = 0; j < TargetK; j++){
                 GTSets[i].insert(GTSet[i * ngt + j]);
             }
             
@@ -174,14 +192,34 @@ int main(){
                 if (GTSets[i].count(BaseIds[TargetClusterID][j]) != 0){
                     VisitedGt ++;
                 }
+                SumVisitedVec += BaseIds[TargetClusterID].size();
             }
 
-            // For the other clusters, if there is 
+            // For the other clusters, if there is neighbor list, only search the vectors in neighbor list
+            for (size_t j = 1; j < EfSearch[ParaIdx]; j++){
+                uint32_t NNClusterID = ClusterID[j];
+                std::pair<uint32_t, uint32_t> NLIndex = std::make_pair(TargetClusterID, NNClusterID);
+                if (NeighborList.find(NLIndex) != NeighborList.end()){
+                    size_t NeighborListSize = NeighborList[NLIndex].size();
+                    for (size_t k = 0; k < NeighborListSize; k++){
+                        if (GTSets[i].count(NeighborList[NLIndex][k]) != 0){
+                            VisitedGt ++;
+                        }
+                    }
+                    SumVisitedVec += NeighborListSize;
+                }
+                else{
+                    for (size_t k = 0; k < BaseIds[NNClusterID].size(); j++){
+                        if (GTSets[i].count(BaseIds[NNClusterID][k]) != 0){
+                            VisitedGt ++;
+                        }
+                    }
+                    SumVisitedVec += BaseIds[NNClusterID].size();
+                }
+            }
 
+            SumVisitedGt += VisitedGt;
         }
+        std::cout << "The average Recall of " << TargetK << " nearest neighbors: " << SumVisitedGt / (nq * TargetK) << " . Number of clusters: " << EfSearch[ParaIdx] << " Number of visited vectors: " << SumVisitedVec / nq << "\n";       
     }
-
-
-
-
 }

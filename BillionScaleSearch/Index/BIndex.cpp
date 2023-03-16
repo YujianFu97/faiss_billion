@@ -838,6 +838,7 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
         return;
     }
 
+    time_recorder Trecorder = time_recorder();
     BaseCodes.resize(nb * PQ->code_size);
     BaseNorms.resize(nb);
 
@@ -870,14 +871,14 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
         assert(BaseIDTest[i] == result.top().second);
     }
 */
-
+    Trecorder.reset();
     for (size_t i = 0; i <  NumBatch; i++){
-        std::cout << "Quantize BaseSet Completed " << i << " batch in " << NumBatch << " Batches\n";
+        Trecorder.print_time_usage("Quantize BaseSet Completed " + std::to_string(i) + " batch in " + std::to_string(NumBatch) + " Batches");
         readXvecFvec<DataType>(BaseInput, BaseSet.data(), Dimension, BatchSize, true, true);
         BaseIDSeqInput.read((char *)BaseSetID.data(), BatchSize * sizeof(uint32_t));
         QuantizeVector(BatchSize, BaseSet.data(), BaseSetID.data(), BaseCodes.data() + i * BatchSize * PQ->code_size, BaseNorms.data() + i * BatchSize, OPQCentroids.data());
-        exit(0);
     }
+    exit(0);
 
     std::ofstream BaseCodeOutput(PathBaseCode, std::ios::binary);
     BaseCodeOutput.write((char * )BaseCodes.data(), nb * PQ->code_size * sizeof(uint8_t));
