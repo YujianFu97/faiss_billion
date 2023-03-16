@@ -567,7 +567,7 @@ uint32_t BIndex::LearnCentroidsINI(
     CenNormInput.read((char * ) & nc, sizeof(size_t)); assert(nc == std::stoul(OptString[3]));
     CenNormInput.read((char * ) CNorms.data(), nc * sizeof(float));
     CenNormInput.close();
-    exit(0);
+    
     
 
 /*
@@ -582,6 +582,7 @@ uint32_t BIndex::LearnCentroidsINI(
     std::cout << "Load Product quantizer file from: " << OptString[9] << "\n";
     assert(exists(OptString[9]));
     PQ = faiss::read_ProductQuantizer(OptString[9].c_str());
+    exit(0);
 
     // Load the base ID and transfer to inverted index
     std::cout << "Load Base ID in sequence from: " << OptString[24] << "\n";
