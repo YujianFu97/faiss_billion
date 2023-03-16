@@ -557,12 +557,13 @@ uint32_t BIndex::LearnCentroidsINI(
     
 
     CentroidHNSW = new hnswlib::HierarchicalNSW(OptString[21], OptString[6], OptString[17]);
-    exit(0);
+    
     // Load the centroid norms
     std::cout << "Load Centroid norm file from: " << OptString[13] << "\n";
     assert(exists(OptString[13]));
     std::ifstream CenNormInput(OptString[13]);
     CNorms.resize(nc);
+    exit(0);
     CenNormInput.read((char * ) & nc, sizeof(size_t)); assert(nc == std::stoul(OptString[3]));
     CenNormInput.read((char * ) CNorms.data(), nc * sizeof(float));
     CenNormInput.close();
