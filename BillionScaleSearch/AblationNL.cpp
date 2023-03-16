@@ -147,11 +147,17 @@ int main(){
     std::vector<uint32_t> GTSet(ngt * nq);
     std::ifstream QueryInput(PathQuery, std::ios::binary);
     std::ifstream GtInput(PathGt, std::ios::binary);
+    std::vector<std::unordered_set<uint32_t>> GTSets(nq);
     readXvecFvec<DataType> (QueryInput, QuerySet.data(), Dimension, nq, true, true);
     readXvec<uint32_t> (GtInput, GTSet.data(), ngt, nq, true, true);
 
+
     for (size_t ParaIdx = 0; ParaIdx < NumPara; ParaIdx++){
+        size_t TargetRecall = 10;
         for (size_t i = 0; i < nq; i++){
+            for (size_t j = 0; j < TargetRecall; j++){
+                GTSets[j].insert(GTSet[i * ngt + j]);
+            }
             size_t VisitedGt = 0;
             std::vector<uint32_t> ClusterID(EfSearch[ParaIdx]);
             std::vector<float> ClusterDist(EfSearch[ParaIdx]);
@@ -163,7 +169,7 @@ int main(){
             // Check the vectors in the neighbor cluster (not in the neighbor list) and the vectors in the neighbor list
             uint32_t TargetClusterID = ClusterID[0];
             for (size_t j = 0; j < BaseIds[TargetClusterID].size(); j++){
-                if 
+                if ()
 
                 
             }

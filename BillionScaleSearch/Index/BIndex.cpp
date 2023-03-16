@@ -590,7 +590,6 @@ uint32_t BIndex::LearnCentroidsINI(
 
     BaseIDInput.read((char *) Base_ID_seq.data(), nb * sizeof(uint32_t));
     BaseIDInput.close();
-    exit(0);
     
     for (uint32_t i = 0; i < nb; i++){
         BaseIds[Base_ID_seq[i]].emplace_back(i);
@@ -812,6 +811,7 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
         std::cout << "Loading Base Vector PQ Codes" << std::endl;
         std::ifstream BaseCodeInput(PathBaseCode, std::ios::binary);
         std::ifstream BaseNormInput(PathBaseNorm, std::ios::binary);
+        exit(0);
 
         BaseCodes.resize(nb * PQ->code_size);
         BaseCodeInput.read((char * ) BaseCodes.data(), nb * PQ->code_size * sizeof(uint8_t));
@@ -851,6 +851,7 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
     std::ifstream BaseIDSeqInput(PathBaseIDSeq, std::ios::binary);
     std::vector<uint32_t> BaseSetID(BatchSize);
     std::cout << "Quantizing the base vectors " << std::endl;
+    exit(0);
 
 /*
     std::vector<float> BaseSetTest(nb * Dimension);
