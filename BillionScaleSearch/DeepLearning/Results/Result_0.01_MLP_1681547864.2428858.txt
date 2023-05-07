@@ -1,0 +1,1 @@
+Run Start Time: Sat Apr 15 16:37:44 2023Learning Rate	0.010000

@@ -379,6 +379,7 @@ void NCListIndex::BuildNList(std::string PathNeighborList, std::string PathBase,
         }
         NCListIndex[NClusterNeighbors * NumQuantUnits] = QuantSize;
         assert(QuantSize == MaxNClistSize[ClusterID]);
+        
         // Do list compression for billion scale storage
 
         std::vector<uint32_t> CompressResult(1 + NClusterNeighbors * NumQuantUnits + MaxNClistSize[ClusterID] + 1024);

@@ -18,6 +18,7 @@ ABNL = AblationNL
 KNNDIST = KthNNDist
 CANLIST = CandidateListSize
 TRAINGT = TrainsetGroundtruth
+COMPTEST = CompTest
 
 abkmeans: $(ABKMEANS)
 ini: $(INITEST)
@@ -28,9 +29,10 @@ nei: $(NEITEST)
 knnd: $(KNNDIST)
 can: ${CANLIST}
 trgt: $(TRAINGT)
+comptest: $(COMPTEST)
 
 % :	%.cpp ./Optkmeans/Optkmeans.cpp ./Index/BIndex.cpp ./utils/utils.h ./hnswlib/hnswalg.cpp ./NCSearch/NCSearch.cpp ../build/faiss/libfaiss.a 
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ $(LDFLAGS) -I../ $(LIBS) ./complib/*.o 
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ $(LDFLAGS) -I../ $(LIBS) ./complib/*.o  ./FastPFor/build/*.a
 
 clean:
 	rm -f $(MAINTEST)
@@ -43,5 +45,6 @@ clean:
 	rm -f $(KNNDIST)
 	rm -f $(CANLIST)
 	rm -f $(TRAINGT)
+	rm -f $(COMPTEST)
 
 .PHONY: all file clean

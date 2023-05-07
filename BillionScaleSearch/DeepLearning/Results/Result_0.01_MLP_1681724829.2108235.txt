@@ -1,0 +1,6 @@
+Run Start Time: Mon Apr 17 17:47:09 2023Model Scale: 3, Model Size: 703588Learning Rate	0.010000
+Epoch	1	Loss	4.502262	Accuracy of the network [308/10000]	3.08 %
+Epoch	2	Loss	4.525387	Accuracy of the network [201/10000]	2.01 %
+Epoch	3	Loss	4.536111	Accuracy of the network [172/10000]	1.72 %
+Epoch	4	Loss	4.543221	Accuracy of the network [181/10000]	1.81 %
+Epoch	5	Loss	4.546100	Accuracy of the network [162/10000]	1.62 %

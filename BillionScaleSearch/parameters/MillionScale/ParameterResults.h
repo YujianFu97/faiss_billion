@@ -1,10 +1,9 @@
-#include "./SIFT1M.h"
-
+#include "./GIST1M.h"
 
 //For recording
 const bool SavingIndex = true;
 const bool Recording = true;
-bool Retrain = true;
+bool Retrain = false;
 const bool UseOPQ = false;
 const bool UsePS = false;
 
@@ -12,20 +11,21 @@ const bool UsePS = false;
 size_t CTrainSize = nt;     // Number of vectors used for initialization centroid training
 size_t nc = 1000;
 size_t PQTrainSize = 20000;
-size_t M_PQ =8;
+size_t M_PQ =32;
 size_t CodeBits = 8;
 size_t NBatches = 1;
-size_t BatchSize = nb / NBatches;
 std::string OPQState = UseOPQ ? "_OPQ_":"_";
 
 //For search
 const size_t NumRecall = 2;
-size_t RecallK[NumRecall] = {1, 10};
+size_t RecallK[NumRecall] = {1, 5};
 const size_t NumPara = 10;
-size_t MaxItem[NumPara] = {100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000};
-size_t EfSearch[NumPara] = {10, 20, 30, 40, 50, 60, 70,80, 90, 100};
+size_t MaxItem[NumPara] = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000};
+size_t EfSearch[NumPara] = {20, 20, 20, 20, 20, 20, 20, 20, 20, 20}; 
+size_t EfNList[NumPara] =  {10, 20, 50, 100, 120, 150, 200, 250, 300, 350};
 //This is the number of checked vectors but not update 
-size_t AccustopItem[NumPara] = {100000};
+size_t AccustopItem[NumPara] = {5000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000};
+
 
 // For optkmeans
 size_t Nlevel = 2;
@@ -36,12 +36,11 @@ bool AddiFunction = true;
 
 //For HNSW graph
 size_t M = 32;
-size_t EfConstruction = 100;
+size_t EfConstruction = 200;
 
 //For PS
 size_t IniM = 30000;
 size_t MaxM = 100000;
-size_t ClusterBoundSize = 50;
 size_t CheckBatch = 1000;
 size_t Verbose = true;
 size_t PQ_TrainSize_PS = 10000; 
@@ -56,11 +55,27 @@ std::string NCString_PS = std::to_string(IniM);
 std::string NCString    = std::to_string(nc);
 
 // For NClist
-size_t NumQuantUnits = 64;
-size_t NClusterNeighbors = 64;
-size_t MaxNCList = 10e4;
-size_t NClusterBatches = 10;
-//float Beta = 0.3;
+size_t SearchK = 10; // The number of NN in search, use SearchK > TargetK
+const bool UseQuantize = false; // True is not implemented yet
+size_t QuantBatchSize = 20;
+size_t NLTargetK = 10; 
+size_t NeighborNum = 100; // The number of neighbor clusters to be computed
+size_t Assign_num_batch = 2; // Assignment batch num
+size_t Graph_num_batch = 2;  // Batch num of 
+size_t Assign_batch_size = nb / Assign_num_batch;
+size_t ClusterDistNum = 1000; //Distance between vectors and centroids, used in search task
+//std::string NNDatasetName = "Train"; // Choose one from "Train" or "Base"
+std::string NNDatasetName = "Base";
+
+// File Path
+const std::string PathNLFolder = PathFolder + Dataset + "/" + "NLFiles/";
+std::string PathDatasetNN = PathNLFolder + NNDatasetName + "NN_" + std::to_string(nc) + "_" + std::to_string(SearchK);
+std::string PathCentroidDist = PathNLFolder + "CentroidNeighborDist_" + std::to_string(nc) + "_" + std::to_string(ClusterDistNum);
+std::string PathBaseNeighborID = PathNLFolder + "BaseNeighborID_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
+std::string PathBaseNeighborDist = PathNLFolder + "BaseNeighborDist_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
+std::string PathSubGraphFolder = PathNLFolder + "SubGraphIndexes/";
+
+
 
 // Data Path 
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_learn.fvecs";
@@ -73,8 +88,8 @@ const std::string PathTrainDist = PathFolder  + Dataset + "/" + Dataset +"_Train
 std::string PathCentroid     = PathFolder + Dataset + "/Centroids_" + NCString + ".fvecs";
 std::string PathIniCentroid  = PathFolder + Dataset + "/Centroids_" + NCString + "_" + std::to_string(IniM)+"_Ini.fvecs";
 
-std::string PathBaseIDInv    = PathFolder + Dataset + "/BaseID_nc" + NCString + "_Seq";
-std::string PathBaseIDSeq    = PathFolder + Dataset + "/BaseID_nc" + NCString + "_Inv";
+std::string PathBaseIDInv    = PathFolder + Dataset + "/BaseID_nc" + NCString + "_Inv";
+std::string PathBaseIDSeq    = PathFolder + Dataset + "/BaseID_nc" + NCString + "_Seq";
 
 std::string PathCentroidNorm = PathFolder + Dataset + "/CentroidNorms_" + NCString;
 
@@ -89,8 +104,8 @@ std::string PathCentroidNeighborDist = PathFolder + Dataset + "/CenNeighborDist_
 std::string PathNeighborList = PathFolder + Dataset + "/NeighborList_" + NCString;
 
 
-std::string PathPQ           = PathFolder + Dataset + "/PQ_" + "_M_" + std::to_string(M_PQ) + "_NBits_" + std::to_string(CodeBits) + OPQState + NCString;
-std::string PathOPQ          = PathFolder + Dataset + "/OPQ_" + "_M_" + std::to_string(M_PQ) + "_NBits_" + std::to_string(CodeBits) + "_" + NCString;
+std::string PathPQ           = PathFolder + Dataset + "/PQ_" + "M_" + std::to_string(M_PQ) + "_NBits_" + std::to_string(CodeBits) + OPQState + NCString;
+std::string PathOPQ          = PathFolder + Dataset + "/OPQ_" + "M_" + std::to_string(M_PQ) + "_NBits_" + std::to_string(CodeBits) + "_" + NCString;
 std::string PathBaseNorm     = PathFolder + Dataset + "/BaseNorm_nc" + "_M_" + std::to_string(M_PQ) + "_NBits_" + std::to_string(CodeBits) + OPQState + NCString;
 std::string PathBaseCode     = PathFolder + Dataset + "/BaseCode_nc" + "_M_" + std::to_string(M_PQ) + "_NBits_" + std::to_string(CodeBits) + OPQState + NCString;
 std::string PathOPQCentroids = PathFolder + Dataset + "/OPQCentroids_" + "_OPQ_M_" + std::to_string(M_PQ) + "_NBits_" + std::to_string(CodeBits) + "_" + NCString +".fvecs";

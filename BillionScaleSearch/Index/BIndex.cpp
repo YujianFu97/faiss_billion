@@ -187,7 +187,6 @@ uint32_t BIndex::LearnCentroidsINI(
     BaseInput.close();
 
     /********************************************/
-
     std::ofstream OptOutput; OptOutput.open(Path_opt_file, std::ios::app);
 
     uint32_t Assignment_indice = 0;
@@ -332,7 +331,6 @@ uint32_t BIndex::LearnCentroidsINI(
         readXvecFvec<DataType>(BaseInput, TrainSet.data() + i * Dimension, Dimension, 1);
     }
     BaseInput.close();
-    
 
     Trecorder.print_record_time_usage(RecordFile, "Load the subtrainset for PQ training");
 
@@ -607,7 +605,6 @@ uint32_t BIndex::LearnCentroidsINI(
     std::cout << "Save Base code file to: " << Path_base_code << " \nSave Base norm file to: " << Path_base_norm << "\n";
 
     Retrain = false;
-    
 
     QuantizeBaseset(Assignment_num_batch, Assignment_batch_size, Path_base, OptString[24], Path_base_code, Path_base_norm);
     return nc;
@@ -815,12 +812,13 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
         std::cout << "Loading Base Vector PQ Codes" << std::endl;
         std::ifstream BaseCodeInput(PathBaseCode, std::ios::binary);
         std::ifstream BaseNormInput(PathBaseNorm, std::ios::binary);
-        exit(0);
 
+        std::cout << "Loading the code \n";
         BaseCodes.resize(nb * PQ->code_size);
         BaseCodeInput.read((char * ) BaseCodes.data(), nb * PQ->code_size * sizeof(uint8_t));
         BaseCodeInput.close();
 
+        std::cout << "Loading the base norms \n";
         BaseNorms.resize(nb);
         BaseNormInput.read((char *) BaseNorms.data(), nb * sizeof(float));
         BaseNormInput.close();
@@ -885,7 +883,6 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
     std::ofstream BaseNormOutput(PathBaseNorm, std::ios::binary);
     BaseNormOutput.write((char *)BaseNorms.data(), nb * sizeof(float));
     BaseNormOutput.close();
-    exit(0);
 
     if (UseOPQ){
         std::ofstream OPQCentroidOutput(PathOPQCentroids, std::ios::binary);
@@ -898,7 +895,6 @@ void BIndex::QuantizeBaseset(size_t NumBatch, size_t BatchSize, std::string Path
     }
     return;
 }
-
 
 std::string BIndex::QuantizationFeature(std::string PathBase, std::string PathBaseIDSeq){
     size_t MaxTestSize = 10e4;
@@ -967,7 +963,6 @@ void BIndex::QuantizeVector(size_t N, float * BaseData, uint32_t * BaseID, uint8
     uint32_t ErrorSample = 10000;
     std::cout << "\nThe base vector residual norm: " << faiss::fvec_norm_L2sqr(Residual.data(), Dimension * ErrorSample) / ErrorSample << std::endl;
     std::cout << "The PQ quantization error of residual: " << faiss::fvec_L2sqr(RecoveredResidual.data(), Residual.data(), Dimension * ErrorSample) / ErrorSample << "\n\n";
-
 
     /*
     for (size_t i = 0; i < 5; i++){
@@ -1080,7 +1075,7 @@ uint32_t BIndex::Search(size_t K, float * Query, int64_t * QueryIds, float * Que
         
         for (size_t j = 0; j < BaseIds[ClusterID].size(); j++){
             uint32_t BaseID = BaseIds[ClusterID][j];
-            
+
             float VNorm = BaseNorms[BaseID];
             float ProdDist = 0;
             for (size_t k = 0; k < PQ->code_size; k++){

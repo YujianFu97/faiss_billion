@@ -52,16 +52,20 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
                 float * traindists = nullptr);
 
 
-void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, size_t nq, size_t nb, size_t k, size_t Dimension, size_t M = 32, size_t EfCons = 20);
+void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, size_t nq, size_t nb, size_t k, size_t Dimension, size_t M = 32, size_t EfCons = 40);
 
+void BruteSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, size_t nq, size_t nb, size_t k, size_t Dimension);
 //float sc_eval(idx_t * assign_id, idx_t * neighbor_id, size_t * cluster_size, size_t neighbor_size, size_t neighbor_test_size, size_t nb, size_t nc);
 
-std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> neighborkmeans(float * Trainset, size_t Dimension, size_t Trainsize, size_t nc,  float prop, size_t NLevel, size_t neiterations, size_t ClusterBoundSize,
+std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> neighborkmeans(float * Trainset, size_t Dimension, size_t Trainsize, size_t nc,  float prop, size_t NLevel, size_t NumOptimization, size_t KOptimization, size_t NeighborNum,
             float * Centroids, bool Verbose, bool Optimize, 
             std::vector<std::vector<uint32_t>> & TrainIds, std::vector<std::vector<uint32_t>> & VectorOutIDs,
             float lambda = 50, size_t OptSize = 10, 
             bool UseGraph = false, size_t iterations = 30,
             uint32_t * trainlabels = nullptr, float * traindists = nullptr);
+
+
+
 
 
 #endif

@@ -23,23 +23,23 @@ const size_t NumPara = 10;
 size_t RecallK[NumRecall] = {1, 10};
 size_t MaxItem[NumPara] = {100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000};
 size_t EfSearch[NumPara] = {10, 20, 30, 40, 50, 60, 70,80, 90, 100};
+size_t EfNList[NumPara] =  {10, 20, 50, 100, 120, 150, 200, 250, 300, 350};
 size_t AccustopItem[NumPara] = {100000};
 
 // For optkmeans
 size_t Nlevel = 2;
 bool UseGraph = true;
-bool UseOptimize = true;
+bool UseOptimize = false;
 bool ConstrolStart = false;
 bool AddiFunction = true;
 
 //For HNSW graph
 size_t M = 32;
-size_t EfConstruction = 40;
+size_t EfConstruction = 200;
 
 //For PS
 size_t IniM = 4000000;
 size_t MaxM = 20000000;
-size_t ClusterBoundSize = 500;
 size_t CheckBatch = 200000;
 size_t Verbose = true;
 size_t PQ_TrainSize_PS = 50000; 
@@ -53,14 +53,26 @@ size_t LowerBound = 10;
 std::string NCString_PS = std::to_string(IniM);
 std::string NCString    = std::to_string(nc);
 
-
 // For NClist
-size_t NumQuantUnits = 64;
-size_t NClusterNeighbors = 64;
-size_t MaxNCList = 10e4;
-size_t NClusterBatches = 10;
-float Beta = 0.3;
+size_t SearchK = 10;
+const bool UseQuantize = false;
+size_t QuantBatchSize = 20;
+size_t NLTargetK = 10;
+size_t NeighborNum = 100;
+size_t Assign_num_batch = 20;
+size_t Graph_num_batch = 20;
+size_t Assign_batch_size = nb / Assign_num_batch;
+size_t ClusterDistNum = 1000; //Distance between vectors and centroids, used in search task
+std::string NNDatasetName = "Train"; // Choose one from "Train" or "Base"
+//std::string NNDatasetName = "Base";
 
+// File Path
+const std::string PathNLFolder = PathFolder + Dataset + "/" + "NLFiles/";
+std::string PathDatasetNN = PathNLFolder + NNDatasetName + "NN_" + std::to_string(nc) + "_" + std::to_string(SearchK);
+std::string PathCentroidDist = PathNLFolder + "CentroidNeighborDist_" + std::to_string(nc) + "_" + std::to_string(ClusterDistNum);
+std::string PathBaseNeighborID = PathNLFolder + "BaseNeighborID_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
+std::string PathBaseNeighborDist = PathNLFolder + "BaseNeighborDist_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
+std::string PathSubGraphFolder = PathNLFolder + "SubGraphIndexes/";
 
 // Data Path 
 

@@ -22,6 +22,7 @@ uint32_t HeuristicNCList(size_t nb, float alpha, float DistBound, float * TrainS
 uint32_t HeuristicINI(std::ofstream & RecordFile, size_t nb, size_t nq, size_t RecallK, float SubsetProp, size_t PQ_M, size_t nbits, size_t PQ_TrainSize, float * TrainSet, float * QuerySet, float * ResultCentroids, std::string PathCentroid,
 std::string PathTrainsetLabel, size_t Dimension, size_t TrainSize, float TargetRecall, float MaxCandidateSize, bool verbose, bool optimize, size_t ClusterBoundSize, size_t CheckBatch, size_t MaxM, size_t IniM, size_t NLevel, size_t GraphM, size_t GraphEf, size_t OptSize, float Lambda);
 
+
 std::tuple<bool, size_t, float, float, float, float> BillionUpdateRecall(
     size_t nb, size_t nq, size_t Dimension, size_t nc, size_t RecallK, float TargetRecall, float MaxCandidateSize, size_t ngt, size_t Assignment_num_batch, size_t NumInMemoryBatches,
     float * QuerySet, uint32_t * QueryGtLabel, float * CenNorms, uint32_t * Base_ID_seq, DataType * InMemoryBatches,

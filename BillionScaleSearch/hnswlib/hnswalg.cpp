@@ -38,6 +38,22 @@ namespace hnswlib {
     cur_element_count = 0;
 }
 
+    HierarchicalNSW::HierarchicalNSW(const std::string & infoLocation, const std::string & edgeLocation, std::ifstream & DataInput){
+        LoadInfo(infoLocation);
+        uint32_t dim;
+        float mass[d_];
+        for (size_t i = 0; i < maxelements_; i++) {
+            DataInput.read((char *) &dim, sizeof(uint32_t));
+            if (dim != d_) {
+                std::cout << "Wrong data dim" << std::endl;
+                exit(1);
+            }
+            DataInput.read((char *) mass, dim * sizeof(float));
+            memcpy(getDataByInternalId(i), mass, data_size_);
+        }
+        LoadEdges(edgeLocation);
+    }
+
 HierarchicalNSW::~HierarchicalNSW()
 {
     free(data_level0_memory_);

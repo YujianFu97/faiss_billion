@@ -1,0 +1,21 @@
+Run Start Time: Mon Apr 17 17:48:56 2023Model Scale: 3, Model Size: 703588Learning Rate	0.010000
+Epoch	1	Loss	4.495348	Accuracy of the network [171/10000]	1.71 %
+Epoch	2	Loss	4.529485	Accuracy of the network [206/10000]	2.06 %
+Epoch	3	Loss	4.544658	Accuracy of the network [168/10000]	1.68 %
+Epoch	4	Loss	4.552636	Accuracy of the network [162/10000]	1.62 %
+Epoch	5	Loss	4.553123	Accuracy of the network [162/10000]	1.62 %
+Epoch	6	Loss	4.552845	Accuracy of the network [162/10000]	1.62 %
+Epoch	7	Loss	4.553479	Accuracy of the network [162/10000]	1.62 %
+Epoch	8	Loss	4.554472	Accuracy of the network [162/10000]	1.62 %
+Epoch	9	Loss	4.581811	Accuracy of the network [162/10000]	1.62 %
+Epoch	10	Loss	4.254806	Accuracy of the network [313/10000]	3.13 %
+Epoch	11	Loss	3.931796	Accuracy of the network [270/10000]	2.70 %
+Epoch	12	Loss	3.860144	Accuracy of the network [299/10000]	2.99 %
+Epoch	13	Loss	3.825181	Accuracy of the network [498/10000]	4.98 %
+Epoch	14	Loss	3.803401	Accuracy of the network [501/10000]	5.01 %
+Epoch	15	Loss	3.790871	Accuracy of the network [333/10000]	3.33 %
+Epoch	16	Loss	3.780052	Accuracy of the network [453/10000]	4.53 %
+Epoch	17	Loss	3.773837	Accuracy of the network [415/10000]	4.15 %
+Epoch	18	Loss	3.768456	Accuracy of the network [510/10000]	5.10 %
+Epoch	19	Loss	3.761859	Accuracy of the network [599/10000]	5.99 %
+Epoch	20	Loss	3.761258	Accuracy of the network [398/10000]	3.98 %

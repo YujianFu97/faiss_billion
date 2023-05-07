@@ -34,17 +34,17 @@ struct time_recorder{
 
         inline void recordTimeConsumption1(){
             std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-            TempDuration1 = (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time)).count();
+            TempDuration1 += (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time)).count();
         }
 
         inline void recordTimeConsumption2(){
             std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-            TempDuration2 = (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time)).count();
+            TempDuration2 += (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time)).count();
         }
 
         inline void recordTimeConsumption3(){
             std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-            TempDuration3 = (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time)).count();
+            TempDuration3 += (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time)).count();
         }
 
         inline void reset(){
@@ -78,13 +78,13 @@ struct memory_recorder{
     void record_memory_usage(std::ofstream & output_record, std::string s){
         rusage r_usage;
         getrusage(RUSAGE_SELF, &r_usage);
-        output_record << s << " The memory usage: " <<  r_usage.ru_ixrss << " KB / " << r_usage.ru_isrss << " KB / " << r_usage.ru_idrss << " KB / " << r_usage.ru_maxrss <<  " KB " << std::endl;
+        output_record << s << " The memory usage: " << r_usage.ru_maxrss / 1000 <<  " MB " << std::endl;
     }
 
     void print_memory_usage(std::string s){
         rusage r_usage;
         getrusage(RUSAGE_SELF, &r_usage);
-        std::cout << s << " The memory usage: " <<  r_usage.ru_ixrss << " / " << r_usage.ru_isrss << " / " << r_usage.ru_idrss << " / " << r_usage.ru_maxrss << std::endl;
+        std::cout << s << " The memory usage: " <<  r_usage.ru_maxrss / 1000 << " MB " << std::endl;
     }
 };
 

@@ -1,0 +1,1 @@
+Run Start Time: Mon Apr 17 17:53:48 2023Model Scale: 0, Model Size: 80676Learning Rate	0.010000

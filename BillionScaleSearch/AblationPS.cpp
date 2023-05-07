@@ -6,8 +6,8 @@ int main(){
 
     Retrain = false;
     bool TestSearch = true;
-    bool TestPS = true;
-    bool TestNonPS = false;
+    bool TestPS = false;
+    bool TestNonPS = true;
     std::string PathRecord = PathFolder + Dataset + "/RecordPS.txt";
     std::ofstream RecordFile;
 
@@ -37,12 +37,12 @@ int main(){
     uint32_t NC = Index->LearnCentroidsINI(CTrainSize, nq, UseOptimize, IniM, MaxM,  TargetRecall, MaxCandidateSize, K, MaxFailureTimes, CheckProp, LowerBound, CheckBatch, M_PQ, CodeBits, PQ_TrainSize_PS, M, EfConstruction, Nlevel, OptSize, Lambda, ngt, PathFolder, PathGt, PathBase, PathQuery, PathLearn, RecordFile);
     if (Recording){RecordFile << "Centroid Training Time: " << Trecorder.getTimeConsumption() / 1000000 << " nc Result: " << NC << std::endl;};
 
-
     if (Recording){RecordFile << Index->ClusterFeature();}
 
-    if (!TestSearch)
-    return 0;
-
+    if (!TestSearch){
+        return 0;
+    }
+    
     RecordFile << " Graph data: efConstruction " << Index->CentroidHNSW->efConstruction_ << " efSearch: " << Index->CentroidHNSW->efSearch << " M: " << Index->CentroidHNSW->maxM_ << " Num of nodes: " << Index->CentroidHNSW->maxelements_ << "\n";
     std::cout << "\n----------------------- Index Evaluation--------------------------\n";
     if(Recording){RecordFile << Index->Eval(PathQuery, PathGt, nq, ngt, NumRecall, NumPara, RecallK, MaxItem, EfSearch);}
@@ -54,11 +54,10 @@ int main(){
     BIndex * BaseIndex = new BIndex(Dimension, nb, nc, nt, SavingIndex, Recording, Retrain, UseOPQ, M_PQ, CodeBits);
     Trecorder.reset();
 
-
     if (Recording){RecordFile << "\n----------------------- Base index training--------\n";}
     BaseIndex->TrainCentroids(CTrainSize, PathLearn, PathCentroid, PathCentroidNorm, UseOptimize, UseGraph, Nlevel, OptSize, Lambda);
     if (Recording){RecordFile << "Centroid Training Time: " << Trecorder.getTimeConsumption() / 1000000 << " nc Result: " << nc << std::endl;};
-    
+
     BaseIndex->Retrain = true;
     BaseIndex->BuildGraph(M, EfConstruction,PathGraphInfo, PathGraphEdges, PathCentroid);
     if (Recording){RecordFile << " Graph Construction Time: " << Trecorder.getTimeConsumption() / 1000000 << std::endl;}

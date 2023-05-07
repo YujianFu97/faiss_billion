@@ -1,0 +1,388 @@
+
+    // The accumulated size of each cluster
+    std::vector<size_t> AccumulateSize(nc, 0);
+    for (size_t i = 1; i < nc; i++){
+        AccumulateSize[i] = AccumulateSize[i - 1] + BaseIds[i - 1].size();
+    }
+    assert((AccumulateSize[nc - 1] + BaseIds[nc - 1].size()) == nb);
+
+
+    /*----------------------------------------------------------------------------------------------------------------------------*/
+    // Save the base vectors and to disk with re-orgnization on inverted index file
+    bool ReOrgnizeNeiIDFlag = true;
+    if (ReOrgnizeNeiIDFlag){
+        if (!exists(PathBaseNeighborIDInv)){
+            std::cout << "Re-orgnize the baseset neighbor cluster ID based on the inverted index structure\n";
+            std::ifstream BaseNeighborIDInput(PathBaseNeighborID, std::ios::binary);
+
+            std::ofstream BaseNeighborIDInvOutput (PathBaseNeighborIDInv);
+            for (size_t i = 0; i < nb; i++){
+                uint32_t TempData = 0;
+                for (size_t j = 0; j < NeighborNum; j++){
+                    BaseNeighborIDInvOutput.write((char *) & TempData, sizeof(uint32_t));
+                }
+            }
+
+            std::vector<uint32_t> BaseNeighborIDBatch(Assign_batch_size * NeighborNum);
+            // Load and re-orgnize baseset in batch
+            for (uint32_t i = 0; i < Assign_num_batch; i++){
+                BaseNeighborIDInput.read((char *) BaseNeighborIDBatch.data(), NeighborNum * Assign_batch_size * sizeof(uint32_t));
+
+                for (size_t temp = 0; temp < 10; temp++){
+                    std::cout << BaseNeighborIDBatch[temp] << " ";
+                }
+                std::cout << "\n";
+
+                for (uint32_t j = 0; j < Assign_batch_size; j++){
+                    uint32_t ClusterID = BaseAssignment[i * Assign_batch_size + j];
+                    uint32_t InnerIndice = BaseInvIndices[ClusterID][i * Assign_batch_size + j];
+
+                    BaseNeighborIDInvOutput.seekp(NeighborNum * (AccumulateSize[ClusterID] + InnerIndice) * sizeof(uint32_t), std::ios::beg);
+                    BaseNeighborIDInvOutput.write((char *) (BaseNeighborIDBatch.data() + j * NeighborNum), NeighborNum * sizeof(uint32_t));
+                }
+                std::cout << "Completed re-orgnization on batch: " << i + 1 << " / " << Assign_num_batch << "\n";
+            }
+            std::cout << "\n";
+            BaseNeighborIDInput.close();
+            BaseNeighborIDInvOutput.close();
+        }
+    }
+
+    bool ReOrgnizeNNFlag = true;
+    if (ReOrgnizeNNFlag){
+        if (!exists(PathBaseNNInv)){
+            std::cout << "Re-orgnize the baseset NN based on the inverted index structure\n";
+            std::ifstream BaseNNInput(PathBaseNN, std::ios::binary);
+
+            std::ofstream BaseNNInvOutput(PathBaseNNInv);
+
+            uint32_t TempData = 0;
+            for  (size_t i = 0; i < nb; i++){
+                for (size_t j = 0; j < SearchK; j++){
+                    BaseNNInvOutput.write((char *) & TempData, sizeof(uint32_t));
+                }
+            }
+
+            std::vector<uint32_t> BaseNNBatch(Assign_batch_size * SearchK);
+            for (size_t i = 0; i < Assign_num_batch; i++){
+                BaseNNInput.read((char *)BaseNNBatch.data(), SearchK * Assign_batch_size * sizeof(uint32_t) );
+
+                for (size_t temp = 0; temp < 10; temp++){
+                    std::cout << BaseNNBatch[temp] << " ";
+                }
+                std::cout << "\n";
+
+                for (size_t j = 0; j < Assign_batch_size; j++){
+                    uint32_t ClusterID = BaseAssignment[i * Assign_batch_size + j];
+                    uint32_t InnerIndice = BaseInvIndices[ClusterID][i * Assign_batch_size + j];
+
+                    BaseNNInvOutput.seekp(SearchK * (AccumulateSize[ClusterID] + InnerIndice) * sizeof(uint32_t), std::ios::beg);
+                    BaseNNInvOutput.write((char *) (BaseNNBatch.data() + j * SearchK), SearchK * sizeof(uint32_t));
+                }
+                std::cout << "Completed re-orgnization on batch: " << i + 1 << " / " << Assign_num_batch << "\n";
+            }
+            std::cout << "\n";
+            BaseNNInput.close();
+            BaseNNInvOutput.close();
+        }
+    }
+
+/*
+        std::ifstream BaseInput(PathBase, std::ios::binary);
+        std::ofstream BaseInvOutput(PathBaseInv, std::ios::binary);
+        for (size_t i = 0; i < nb; i++){
+            uint32_t TempData = 0;
+            for (size_t j = 0; j < Dimension; j++){
+                BaseInvOutput.write((char*) & TempData, sizeof(DataType));
+            }
+        }
+        std::vector<DataType> BaseBatch(Assign_batch_size * Dimension);
+        for (uint32_t i = 0; i < Assign_num_batch; i++){
+            readXvecFvec<DataType>(BaseInput, BaseBatch.data(), Dimension, Assign_batch_size, true, true);
+            for (uint32_t j = 0; j < Assign_batch_size; j++){
+                uint32_t ClusterID = BaseAssignment[i * Assign_batch_size + j];
+                uint32_t InnerIndice = BaseInvIndices[ClusterID][i * Assign_batch_size + j];
+                BaseInvOutput.seekp(Dimension * (AccumulateSize[ClusterID] + InnerIndice) * sizeof(DataType), std::ios::beg);
+                BaseInvOutput.write((char *) (BaseBatch.data() + j * Dimension), Dimension * sizeof(DataType));
+            }
+            std::cout << "Completed re-orgnization on batch: " << i + 1 << " / " << Assign_num_batch << "\r";
+        }
+        std::cout << "\n";
+
+        BaseInvOutput.close();
+    }
+*/
+
+    size_t AvaliableMemory = 1; // In GB
+/*
+    if (!SearchNNFlag){
+        size_t MaxNumInMemoryClusters = AvaliableMemory * 1024 * 1024 * 1024 / (sizeof(DataType) * Dimension * (nb / nc)); // Maximum number of clusters in memory
+        std::cout << "The avaliable number of clusters to be loaded in main memory in NN computation is: " << MaxNumInMemoryClusters << "\n";
+        std::ofstream BaseNNInvOutput(PathBaseNNInv, std::ios::binary);
+
+        std::ifstream BaseInvInput (PathBaseInv, std::ios::binary);
+        
+        std::vector<std::vector<float>> LoadedClusterData;
+        std::unordered_map<uint32_t, uint32_t> InMemoryClusterMap; // The record of in memory cluster: <clusterID, cluster indice>
+
+        std::ifstream BaseNeighborIDInput (PathBaseNeighborIDInv, std::ios::binary);
+        std::vector<std::vector<uint32_t>> LoadedBaseNeighborID;
+        std::unordered_map<uint32_t, uint32_t> InMemoryClusterNeiIDMap;
+
+        assert(ClusterBoundSize < MaxNumInMemoryClusters);
+
+        TRecorder.reset();
+
+        for (uint32_t i = 0; i < nc; i++){
+            
+            size_t ClusterSize = BaseIds[i].size();
+
+            std::unordered_set<uint32_t> RequiredCluster({i}); // Clusters that cannot be overwritten
+
+            uint32_t DataClusterIndice = LoadClusterInfo<DataType>(MaxNumInMemoryClusters, ClusterSize, i, Dimension, Dimension, BaseInvInput, InMemoryClusterMap, 
+                                                                    LoadedClusterData, AccumulateSize, RequiredCluster);
+            uint32_t NeighborIDIndice = LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, ClusterSize, i, NeighborNum, NeighborNum, BaseNeighborIDInput, InMemoryClusterNeiIDMap, 
+                                                                    LoadedBaseNeighborID, AccumulateSize, RequiredCluster);
+
+            for (size_t j = 0; j < ClusterSize; j++){
+                for (size_t k = 0; k < NeighborNum; k++){
+                    RequiredCluster.insert(LoadedBaseNeighborID[NeighborIDIndice][j * NeighborNum + k]);
+                }
+            }
+
+            for (auto it = RequiredCluster.begin(); it != RequiredCluster.end(); it++){
+                LoadClusterInfo<DataType>(MaxNumInMemoryClusters, BaseIds[*it].size(), *it, Dimension, Dimension, BaseInvInput, InMemoryClusterMap, LoadedClusterData, AccumulateSize, RequiredCluster);
+            }
+            TRecorder.print_time_usage("Load all required clusters");
+
+            std::cout << "Loaded clusters, The number of loaded clusters: " << InMemoryClusterMap.size() << "\n";
+            std::vector<uint32_t> ClusterBaseNN(ClusterSize * (SearchK + 1));
+            std::vector<float> ClusterBaseNNDist(ClusterSize * (SearchK + 1));
+            std::vector<int64_t> TempLabels(ClusterSize * (SearchK + 1), 0);
+
+#pragma omp parallel for
+            for (size_t j = 0; j < ClusterSize; j++){
+                size_t TotalVectorNum = 0;
+                //std::cout << "1\n";
+
+                for (size_t k = 0; k < NeighborNum; k++){ TotalVectorNum += BaseIds[LoadedBaseNeighborID[NeighborIDIndice][j * NeighborNum + k]].size();}
+                std::vector<float> TempVectors(TotalVectorNum * Dimension);
+                std::vector<uint32_t> TempVectorID(TotalVectorNum);
+
+                uint32_t TempIndice = 0;
+                for (size_t k = 0; k < NeighborNum; k++){
+                    uint32_t ClusterID = LoadedBaseNeighborID[NeighborIDIndice][j * NeighborNum + k];
+                    memcpy(TempVectors.data() + TempIndice * Dimension, LoadedClusterData[InMemoryClusterMap[ClusterID]].data(), BaseIds[ClusterID].size() * Dimension * sizeof(float));
+                    memcpy(TempVectorID.data() + TempIndice, BaseIds[ClusterID].data(), BaseIds[ClusterID].size() * sizeof(uint32_t));
+                    TempIndice += BaseIds[ClusterID].size();
+                }
+                //std::cout << "2\n";
+
+                faiss::float_maxheap_array_t res = {size_t(1), size_t(SearchK + 1), TempLabels.data() + j * (SearchK + 1), ClusterBaseNNDist.data() + j * (SearchK + 1)};
+                faiss::knn_L2sqr (LoadedClusterData[DataClusterIndice].data() + j * Dimension, TempVectors.data(), Dimension, 1, TotalVectorNum, &res);
+                //std::cout << "3\n";
+
+                for (size_t k = 0; k < SearchK; k++){ClusterBaseNN[j * SearchK + k] = TempVectorID[TempLabels[j * (SearchK + 1) + k + 1]];}
+                //std::cout << "4\n";
+            }
+            TRecorder.print_time_usage("Search the NN for base vectors");
+            BaseNNInvOutput.write((char *) ClusterBaseNN.data(), ClusterSize * SearchK * sizeof(uint32_t));
+
+            //delete SubVecGraph;
+            TRecorder.print_time_usage("Searching the " + std::to_string(i + 1) + " th cluster in " + std::to_string(nc) + " clusters");
+            MRecorder.print_memory_usage("Searching the " + std::to_string(i + 1) + " th cluster in " + std::to_string(nc) + " clusters");
+        }
+        BaseNNInvOutput.close();
+        TRecorder.print_time_usage("Search the NN for base vectors");
+        MRecorder.print_memory_usage("Search the NN for base vectors");
+    }
+*/
+
+    /*---------------------------------------------------------------------------------------------------------------------*/
+    // Build the BeNN inverted structure
+    bool SaveBeNNFlag = true;
+
+    if(SaveBeNNFlag){
+        std::cout << "Build the base beNN structure\n";
+        if (!exists(PathBaseBeNN)){
+            std::ifstream BaseNNInvInput(PathBaseNNInv, std::ios::binary);
+            for (size_t i = 0; i < nc; i++){
+                size_t ClusterSize = BaseIds[i].size();
+                std::vector<uint32_t> ClusterNN(ClusterSize * SearchK);
+                BaseNNInvInput.read((char *) ClusterNN.data(), ClusterSize * SearchK * sizeof(uint32_t));
+
+                for (uint32_t j = 0; j < ClusterSize; j++){
+                    for (uint32_t k = 0; k < TargetK; k++){
+                        BaseBeNN[ClusterNN[j * SearchK + k]].emplace_back(BaseIds[i][j]);
+                    }
+                }
+            }
+
+            TRecorder.print_time_usage("Loaded all base NN vectors, write the beNN data to disk");
+            MRecorder.print_memory_usage("Loaded all base NN vectors, write the beNN data to disk");
+            std::ofstream BaseBeNNOutput(PathBaseBeNN, std::ios::binary);
+            for (size_t i = 0; i < nb; i++){
+                uint32_t BeNNSize = BaseBeNN[i].size();
+                BaseBeNNOutput.write((char *) & BeNNSize, sizeof(uint32_t));
+                BaseBeNNOutput.write((char *) BaseBeNN[i].data(), BeNNSize * sizeof(uint32_t));
+            }
+        }
+        else{
+            std::ifstream BaseBeNNInput(PathBaseBeNN, std::ios::binary);
+            uint32_t BaseBeNNSize = 0;
+            for (size_t i = 0; i < nb; i++){
+                BaseBeNNInput.read((char *) & BaseBeNNSize, sizeof(uint32_t));
+                BaseBeNN[i].resize(BaseBeNNSize);
+                BaseBeNNInput.read((char *) BaseBeNN[i].data(), BaseBeNNSize * sizeof(uint32_t));
+            }
+        }
+    }
+
+    /*---------------------------------------------------------------------------------------------------------------------*/
+    // Load the computed NN and launch the assignment optimization process
+    bool AssignOptimizeFlag = true;
+    bool NeiOptimizeVisualize = false;
+    std::vector<uint32_t> OriginAssignmentID(nb); memcpy(OriginAssignmentID.data(), BaseAssignment.data(), nb * sizeof(uint32_t));
+
+    if (AssignOptimizeFlag){
+        if (!exists(PathOptAssignment)){
+
+            size_t MaxNumInMemoryClusters = AvaliableMemory * 1024 * 1024 * 1024 / (2 * sizeof(uint32_t) * TargetK * (nb / nc));
+            std::cout << "The maximum number of loaded clusters is: " << MaxNumInMemoryClusters << "\n";
+            std::ifstream BaseNNInvInput(PathBaseNNInv, std::ios::binary);
+            std::ifstream BaseNeighborIDInvINput(PathBaseNeighborIDInv, std::ios::binary);
+
+            std::vector<std::vector<uint32_t>> LoadedBaseNN;
+            std::unordered_map<uint32_t, uint32_t> InMemoryClusterNNMap;
+
+            std::vector<std::vector<uint32_t>> LoadedBaseNeighborID;
+            std::unordered_map<uint32_t, uint32_t> InMemoryClusterNeiIDMap;
+            std::vector<size_t> AllClusterSize(nc);
+
+            for(size_t i = 0; i < nc; i++){AllClusterSize[i] = BaseIds[i].size();} // Only used for cost computation, not for index
+
+            float SumSearchCost = 0;
+            float SumVisitedNN = 0;
+            for (uint32_t i = 0;  i < nc; i++){
+                std::unordered_set<uint32_t> RequiredCluster({i});
+
+                size_t ClusterSize = AllClusterSize[i];
+                uint32_t NNIndice = LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, ClusterSize, i, SearchK, TargetK, BaseNNInvInput, InMemoryClusterNNMap, LoadedBaseNN, AccumulateSize, RequiredCluster);
+                uint32_t NeiIDIndice = LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, ClusterSize, i, NeighborNum, TargetNeighborNum, BaseNeighborIDInvINput, InMemoryClusterNeiIDMap, LoadedBaseNeighborID, AccumulateSize, RequiredCluster);
+                for (size_t j = 0; j < ClusterSize; j++){
+                    std::vector<size_t> VectorSearchCost(TargetK);
+                    std::vector<size_t> VectorSearchGt(TargetK);
+//#pragma omp parallel for
+                    for (size_t temp = 0; temp < TargetK; temp++){
+                        uint32_t NNID = LoadedBaseNN[NNIndice][j * TargetK + temp];
+                        auto result = FetchSearchCost(TargetNeighborNum, AllClusterSize, OriginAssignmentID[NNID], LoadedBaseNeighborID[NeiIDIndice].data() + j * TargetNeighborNum);
+                        VectorSearchCost[temp] = result.first;
+                        VectorSearchGt[temp] = result.second;
+                    }
+                    for (size_t temp = 0; temp < TargetK; temp++){
+                        SumSearchCost += VectorSearchCost[temp];
+                        SumVisitedNN += VectorSearchGt[temp];
+                    }
+                    std::cout << "Completed " << j << " th vector\r";
+                }
+            }
+
+            std::cout << "The avg search cost: " << SumSearchCost / (nb * TargetK) << " avg recall@" << TargetK << " : " << SumVisitedNN / (TargetK * nb) << "\n";
+
+            MRecorder.print_memory_usage("Computed the search cost");
+            TRecorder.print_time_usage("Computed the search cost");
+
+            float SumVectorClusterDist = 0;
+            std::ifstream BaseNeighborDistInput(PathBaseNeighborDist, std::ios::binary);
+            std::vector<float> BaseNeighborDistBatch(nb * NeighborNum);
+            BaseNeighborDistInput.read((char *) BaseNeighborDistBatch.data(), nb * NeighborNum * sizeof(float));
+
+            for (size_t i = 0; i < nb; i++){
+                SumVectorClusterDist += BaseNeighborDistBatch[i * NeighborNum];
+            }
+            std::cout << "The average dist before optimization: " << SumVectorClusterDist / nb << "\n\n";
+
+
+            for (size_t OptIndice = 0; OptIndice < NumOptimization; OptIndice ++){
+                size_t SumShiftNum = 0;
+
+                for (uint32_t i = 0; i < nc; i++){
+                    std::unordered_set<uint32_t> RequiredCluster({i});
+                    size_t ClusterSize = BaseIds[i].size();
+
+                    uint32_t NNIndice = LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, ClusterSize, i, SearchK, TargetK, BaseNNInvInput, InMemoryClusterNNMap, LoadedBaseNN, AccumulateSize, RequiredCluster);
+                    uint32_t NeiIDIndice = LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, ClusterSize, i, NeighborNum, TargetNeighborNum, BaseNeighborIDInvINput, InMemoryClusterNeiIDMap, LoadedBaseNeighborID, AccumulateSize, RequiredCluster);
+                    //std::cout << i << " " << InMemoryClusterNeiIDMap[i] << " " << LoadedBaseNeighborID[InMemoryClusterNeiIDMap[i]].size() << " "
+                    //<< InMemoryClusterNNMap[i] << " " << LoadedBaseNN[InMemoryClusterNNMap[i]].size()  << " " << ClusterSize <<"\n";
+                    assert(LoadedBaseNeighborID[InMemoryClusterNeiIDMap[i]].size() == (ClusterSize * TargetNeighborNum));
+                    assert(LoadedBaseNN[InMemoryClusterNNMap[i]].size() == (ClusterSize * TargetK));          
+
+
+                    for (uint32_t j = 0; j < ClusterSize; j++){
+                        uint32_t NNID = LoadedBaseNN[NNIndice][j];
+                        for (uint32_t k = 0; k < BaseBeNN[NNID].size(); k++){
+                            uint32_t NNRNN = BaseBeNN[NNID][k];
+                            RequiredCluster.insert(BaseAssignment[NNRNN]);
+                        }
+                    }
+
+                    for (auto it = RequiredCluster.begin(); it != RequiredCluster.end(); it++){
+                        LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, BaseIds[*it].size(), *it, SearchK, TargetK, BaseNNInvInput, InMemoryClusterNNMap, LoadedBaseNN, AccumulateSize, RequiredCluster);
+                        LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, BaseIds[*it].size(), *it, NeighborNum, TargetNeighborNum, BaseNeighborIDInvINput, InMemoryClusterNeiIDMap, LoadedBaseNeighborID, AccumulateSize, RequiredCluster);
+                        //std::cout << *it << " " << InMemoryClusterNeiIDMap[*it] << " " << LoadedBaseNeighborID[InMemoryClusterNeiIDMap[*it]].size() << " "
+                        //<< InMemoryClusterNNMap[*it] << " " << LoadedBaseNN[InMemoryClusterNNMap[*it]].size()  << " " << BaseIds[*it].size() <<"\n";
+                        assert(LoadedBaseNeighborID[InMemoryClusterNeiIDMap[*it]].size() == (BaseIds[*it].size() * TargetNeighborNum));
+                        assert(LoadedBaseNN[InMemoryClusterNNMap[*it]].size() == (BaseIds[*it].size()  * TargetK));  
+                    }
+
+                    SumShiftNum += NeiOptimize(i, TargetK, TargetNeighborNum, NeiOptimizeVisualize, BaseIds[i], AllClusterSize, LoadedBaseNN, InMemoryClusterNNMap, OriginAssignmentID, 
+                    BaseInvIndices, BaseAssignment, LoadedBaseNeighborID, InMemoryClusterNeiIDMap, BaseBeNN);
+
+
+                    if ( ((i+1) % (nc/10)) == 0){
+                        SumSearchCost = 0; SumVisitedNN = 0;
+                        for (uint32_t temp0 = 0;  temp0 < nc; temp0++){
+                            std::unordered_set<uint32_t> RequiredCluster({temp0});
+
+                            size_t ClusterSize = BaseIds[temp0].size();
+                            uint32_t NNIndice = LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, ClusterSize, temp0, SearchK, TargetK, BaseNNInvInput, InMemoryClusterNNMap, LoadedBaseNN, AccumulateSize, RequiredCluster);
+                            uint32_t NeiIDIndice = LoadClusterInfo<uint32_t>(MaxNumInMemoryClusters, ClusterSize, temp0, NeighborNum, TargetNeighborNum, BaseNeighborIDInvINput, InMemoryClusterNeiIDMap, LoadedBaseNeighborID, AccumulateSize, RequiredCluster);
+
+                            for (size_t temp1 = 0; temp1 < ClusterSize; temp1++){
+                                for (size_t temp = 0; temp < TargetK; temp++){
+
+                                    uint32_t NNID = LoadedBaseNN[NNIndice][temp1 * TargetK + temp];
+                                    auto result = FetchSearchCost(TargetNeighborNum, AllClusterSize, BaseAssignment[NNID], LoadedBaseNeighborID[NeiIDIndice].data() + temp1 * TargetNeighborNum);
+                                    SumSearchCost += result.first;
+                                    SumVisitedNN += result.second;
+                                }
+                            }
+                        }
+                        std::cout << "The number of optimization: " << SumShiftNum << " After optimization: The avg search cost: " << SumSearchCost / (nb * TargetK) << " avg recall@" << TargetK << " : " << SumVisitedNN / (TargetK * nb) << "\n";
+
+                        std::cout << "The number of shift in optimizatioin: " << SumShiftNum << "\n";
+                        MRecorder.print_memory_usage("Completed optimize the " + std::to_string(i + 1) + " th cluster");
+                        TRecorder.print_time_usage("Completed optimize the " + std::to_string(i + 1) + " th cluster");
+                    }
+                }
+
+                SumVectorClusterDist = 0;
+                for (size_t i = 0; i < nb; i++){
+                    SumVectorClusterDist += faiss::fvec_L2sqr(BaseSet.data() + i * Dimension, Centroids.data() + BaseAssignment[i] * Dimension, Dimension);
+                }
+                std::cout << "The distance between vectors and centrodis after the optimization: " << SumVectorClusterDist / nb << "\n";
+            }
+
+            //Save the optimized base vector assignment
+            std::ofstream OptAssignmentOutput(PathOptAssignment, std::ios::binary);
+            OptAssignmentOutput.write((char *) BaseAssignment.data(), nb * sizeof(uint32_t));
+            OptAssignmentOutput.close();
+            }
+        else{
+            std::ifstream OptAssignmentInput(PathOptAssignment, std::ios::binary);
+            OptAssignmentInput.read((char *) BaseAssignment.data(), nb * sizeof(uint32_t));
+            OptAssignmentInput.close();
+        }
+        TRecorder.print_time_usage("Computed the search cost");
+        MRecorder.print_memory_usage("Computed the search cost");
+    }

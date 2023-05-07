@@ -1,0 +1,2 @@
+Run Start Time: Sat Apr 15 17:23:02 2023Learning Rate	0.010000
+Epoch	1	Loss	0.629910	

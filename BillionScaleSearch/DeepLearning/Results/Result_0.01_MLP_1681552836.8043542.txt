@@ -1,0 +1,10 @@
+Run Start Time: Sat Apr 15 18:00:36 2023Learning Rate	0.010000
+Epoch	1	Loss	0.632162	Accuracy of the network [8316/10000]	83.16 %
+Epoch	2	Loss	0.423200	Accuracy of the network [8380/10000]	83.80 %
+Epoch	3	Loss	0.391959	Accuracy of the network [8443/10000]	84.43 %
+Epoch	4	Loss	0.379152	Accuracy of the network [8449/10000]	84.49 %
+Epoch	5	Loss	0.372236	Accuracy of the network [8473/10000]	84.73 %
+Epoch	6	Loss	0.368752	Accuracy of the network [8485/10000]	84.85 %
+Epoch	7	Loss	0.363631	Accuracy of the network [8525/10000]	85.25 %
+Epoch	8	Loss	0.361258	Accuracy of the network [8497/10000]	84.97 %
+Epoch	9	Loss	0.359766	Accuracy of the network [8472/10000]	84.72 %
