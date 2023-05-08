@@ -142,7 +142,7 @@ int main(){
             for (size_t j = 0; j < Assign_batch_size; j++){
                 BaseIDSeqOutput.write((char *) & BaseNeighborClusterIDBatch[j * NeighborNum], sizeof(uint32_t));
             }
-            std::cout << "Assign the " << i + 1<< " th batch in " << Assign_num_batch << " total batches\n";    
+            TRecorder.print_time_usage("Assign the " + std::to_string(i + 1) + " th batch in " + std::to_string(Assign_num_batch) + " total batches");
         }
         BaseNeighborIDOutput.close();
         BaseNeighborDistOutput.close();
