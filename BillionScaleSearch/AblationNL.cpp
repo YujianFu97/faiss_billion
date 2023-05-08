@@ -138,7 +138,7 @@ int main(){
 
 #pragma omp parallel for
             for (size_t j = 0; j < Assign_batch_size; j++){
-                auto result = Cengraph->searchKnn(BaseAssignBatch.data() + j * Dimension, NeighborNum);
+                auto result = Cengraph->searchBaseLayer(BaseAssignBatch.data() + j * Dimension, NeighborNum);
                 for (size_t k = 0; k < NeighborNum; k++){
                     BaseNeighborClusterIDBatch[j * NeighborNum + NeighborNum - k - 1] = result.top().second;
                     BaseNeighborClusterDistBatch[j * NeighborNum + NeighborNum - k - 1] = result.top().first;
