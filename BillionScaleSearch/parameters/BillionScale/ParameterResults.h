@@ -73,6 +73,8 @@ std::string PathCentroidDist = PathNLFolder + "CentroidNeighborDist_" + std::to_
 std::string PathBaseNeighborID = PathNLFolder + "BaseNeighborID_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
 std::string PathBaseNeighborDist = PathNLFolder + "BaseNeighborDist_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
 std::string PathSubGraphFolder = PathNLFolder + "SubGraphIndexes/";
+std::string PathCenGraphInfo = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".info";
+std::string PathCenGraphEdge = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".edge";
 
 // Data Path 
 

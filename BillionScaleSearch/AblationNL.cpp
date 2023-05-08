@@ -75,7 +75,7 @@ int main(){
 
     /*-----------------------------------------------------------------------------------------------------------------*/
     // Train the centroids for inverted index
-    PathCentroid = PathNLFolder + "Centroids_" + std::to_string(nc);
+    PathCentroid = PathNLFolder + "Centroids_" + std::to_string(nc) + ".fvecs";
     std::vector<float> Centroids(nc * Dimension);
     if (!exists(PathCentroid)){
         std::vector<float> TrainSet(nt * Dimension);
@@ -109,11 +109,19 @@ int main(){
     }
 */
 
-
-
     // Assign the base set, and optimize the assignment with minimizing the search cost:
-    hnswlib::HierarchicalNSW * Cengraph = new hnswlib::HierarchicalNSW(Dimension, nc, M, 2*M, EfConstruction);
-    for (size_t i = 0; i < nc; i++){Cengraph->addPoint(Centroids.data() + i * Dimension);}
+    hnswlib::HierarchicalNSW * Cengraph;
+    if (exists(PathCenGraphInfo) && exists(PathCenGraphEdge)){
+        Cengraph = new hnswlib::HierarchicalNSW(PathCenGraphInfo, PathCentroid, PathCenGraphEdge);
+    }
+    else{
+        Cengraph = new hnswlib::HierarchicalNSW(Dimension, nc, M, 2*M, EfConstruction);
+        for (size_t i = 0; i < nc; i++){Cengraph->addPoint(Centroids.data() + i * Dimension);}
+        Cengraph->SaveEdges(PathCenGraphEdge);
+        Cengraph->SaveInfo(PathCenGraphInfo);
+    }
+
+
     if (!exists(PathBaseNeighborID) || !exists(PathBaseNeighborDist) || !exists(PathBaseIDSeq)){
         std::cout << "Assign the base vectors\n";
         std::ifstream BaseInput = std::ifstream(PathBase, std::ios::binary);
