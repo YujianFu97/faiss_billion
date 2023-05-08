@@ -56,10 +56,10 @@ std::string NCString    = std::to_string(nc);
 
 // For NClist
 size_t SearchK = 10; // The number of NN in search, use SearchK > TargetK
-const bool UseQuantize = false; // True is not implemented yet
-size_t QuantBatchSize = 20;
+const bool UseQuantize = false; // UseQuantize = True is not implemented yet
+size_t QuantBatchSize = 20; 
 size_t NLTargetK = 10; 
-size_t NeighborNum = 100; // The number of neighbor clusters to be computed
+size_t NeighborNum = 20; // The number of neighbor clusters to be computed
 size_t Assign_num_batch = 2; // Assignment batch num
 size_t Graph_num_batch = 2;  // Batch num of 
 size_t Assign_batch_size = nb / Assign_num_batch;

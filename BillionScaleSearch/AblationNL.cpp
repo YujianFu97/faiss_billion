@@ -38,7 +38,7 @@ int main(){
 
     time_recorder TRecorder = time_recorder();
     memory_recorder MRecorder = memory_recorder();
-    
+
     PrepareFolder(PathNLFolder.c_str());
     assert(NLTargetK <= SearchK);
 
