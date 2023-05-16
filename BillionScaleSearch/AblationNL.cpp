@@ -187,6 +187,11 @@ int main(){
             BaseIds[BaseAssignment[i]].emplace_back(i);
         }
 
+        for (size_t i = 0; i < 1000; i++){
+            std::cout << BaseIds[i].size() << " ";
+        }
+        exit(0);
+
         std::cout << "Start the evaluation\n";
         TRecorder.reset();
 
