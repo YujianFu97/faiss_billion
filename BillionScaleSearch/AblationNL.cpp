@@ -197,7 +197,7 @@ int main(){
 
 //#pragma omp parallel for
         for (size_t i = 0; i < nq; i++){
-            std::cout << "Processing " << i << " / " << nq << "\n";
+            std::cout << "Processing " << i << " / " << nq << "\r";
             size_t VisitedGt = 0;
             size_t VisitedVec = 0;
 
@@ -235,6 +235,7 @@ int main(){
 
         float Ratio = 0;
         for (size_t i = 0; i < nq; i++){
+            std::cout << VectorCost[i].second << " " << VectorCost[i].first << " | ";
             Ratio += float(VectorCost[i].second - VectorCost[i].first) / VectorCost[i].second;
         }
         std::cout << "The ratio for K = " << KInEval << " is: " << Ratio / nq << "\n";
