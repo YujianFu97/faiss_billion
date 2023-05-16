@@ -128,7 +128,7 @@ int main(){
 
     std::cout << exists(PathBaseNeighborID) << " " << exists(PathBaseNeighborDist) << " " << exists(PathBaseIDSeq) << " ";
     std::cout << PathBaseNeighborID << "\n" << PathBaseNeighborDist << "\n" << PathBaseIDSeq << "\n";
-    exit(0);
+    //exit(0);
 
     if (!exists(PathBaseNeighborID) || !exists(PathBaseNeighborDist) || !exists(PathBaseIDSeq)){
         std::cout << "Assign the base vectors\n";
@@ -167,6 +167,7 @@ int main(){
     /*------------------------------------*/
     bool NeighborTest = true;
     if (NeighborTest){
+        std::cout << "Test the vector cost on neighboring partition\n";
         std::vector<float> Query (nq * Dimension);
         std::vector<uint32_t> GT(nq * ngt);
         std::ifstream GTInput(PathGt, std::ios::binary);
@@ -184,10 +185,9 @@ int main(){
             BaseIds[BaseAssignment[i]].emplace_back(i);
         }
 
+        std::cout << "Start the evaluation\n";
+        TRecorder.reset();
         for (size_t KInEval = 1; KInEval <= 10; KInEval++){
-
-
-
         
         std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq); 
 
@@ -234,7 +234,7 @@ int main(){
             Ratio += float(VectorCost[i].second - VectorCost[i].first) / VectorCost[i].second;
         }
         std::cout << "The ratio for K = " << KInEval << " is: " << Ratio / nq << "\n";
-        
+        TRecorder.print_time_usage("");
         }
         exit(0);
     }
