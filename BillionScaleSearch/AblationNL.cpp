@@ -187,12 +187,13 @@ int main(){
 
         std::cout << "Start the evaluation\n";
         TRecorder.reset();
+
         for (size_t KInEval = 1; KInEval <= 10; KInEval++){
         
         std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq); 
 
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_t i = 0; i < nq; i++){
             size_t VisitedGt = 0;
             size_t VisitedVec = 0;
