@@ -122,6 +122,9 @@ int main(){
     }
 
     std::string PathBaseIDSeq    = PathNLFolder + "BaseID_nc" + NCString + "_Seq";
+    std::cout << exists(PathBaseNeighborID) << " " << exists(PathBaseNeighborDist) << " " << exists(PathBaseIDSeq) << " ";
+    std::cout << PathBaseNeighborID << "\n" << PathBaseNeighborDist << "\n" << PathBaseIDSeq << "\n";
+    exit(0);
 
     if (!exists(PathBaseNeighborID) || !exists(PathBaseNeighborDist) || !exists(PathBaseIDSeq)){
         std::cout << "Assign the base vectors\n";
@@ -167,11 +170,7 @@ int main(){
         std::ifstream QueryInput(PathQuery, std::ios::binary);
         readXvecFvec<DataType>(QueryInput, Query.data(), Dimension, nq, true, true);
         GTInput.close(); QueryInput.close();
-        
-        size_t KInEval = 1;
         size_t Ef = 10000;
-        std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq); 
-
         std::vector<uint32_t> BaseAssignment(nb);
         std::vector<std::vector<uint32_t>> BaseIds(nc);
         std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
@@ -180,6 +179,14 @@ int main(){
             assert(BaseAssignment[i] < nc);
             BaseIds[BaseAssignment[i]].emplace_back(i);
         }
+
+        for (size_t KInEval = 1; KInEval <= 10; KInEval++){
+
+
+
+        
+        std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq); 
+
 
 #pragma omp parallel for
         for (size_t i = 0; i < nq; i++){
@@ -222,7 +229,9 @@ int main(){
         for (size_t i = 0; i < nq; i++){
             Ratio += float(VectorCost[i].second - VectorCost[i].first) / VectorCost[i].second;
         }
-        std::cout << "The ratio for K = " << KInEval << " is: " << Ratio / nq;
+        std::cout << "The ratio for K = " << KInEval << " is: " << Ratio / nq << "\n";
+        
+        }
         exit(0);
     }
     /*------------------------------------*/
