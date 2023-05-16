@@ -195,7 +195,7 @@ int main(){
 
 //#pragma omp parallel for
         for (size_t i = 0; i < nq; i++){
-            std::cout << "Processing " << i << " / " << nq << "\r";
+            std::cout << "Processing " << i << " / " << nq << "\n";
             size_t VisitedGt = 0;
             size_t VisitedVec = 0;
 
