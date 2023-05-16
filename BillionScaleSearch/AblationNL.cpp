@@ -121,7 +121,11 @@ int main(){
         Cengraph->SaveInfo(PathCenGraphInfo);
     }
 
+
+
     std::string PathBaseIDSeq    = PathNLFolder + "BaseID_nc" + NCString + "_Seq";
+
+
     std::cout << exists(PathBaseNeighborID) << " " << exists(PathBaseNeighborDist) << " " << exists(PathBaseIDSeq) << " ";
     std::cout << PathBaseNeighborID << "\n" << PathBaseNeighborDist << "\n" << PathBaseIDSeq << "\n";
     exit(0);
