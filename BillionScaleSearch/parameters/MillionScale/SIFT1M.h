@@ -5,7 +5,7 @@
 size_t nb = 1000000;
 const size_t Dimension = 128;
 const std::string Dataset = "SIFT1M";
-std::string PathFolder = "/home/yujianfu/Desktop/Dataset/";
+std::string PathFolder = "/home/yujianfu/Desktop/Dataset/SIFT/";
 
 uint32_t ngt = 100;
 size_t nq = 10000;

@@ -21,10 +21,10 @@ def fetchsearchcost(TargetK, assignment, trainindices, NeighborNum, clusterindic
     return trainset
 
 
-nb = 1000
-nt = 900
+nb = 100
+nt = 100
 D = 2
-nc = 10
+nc = 8
 TargetK = 15
 NeighborNum = 5
 
@@ -46,13 +46,13 @@ for i in range(nc):
 for i in range(nt):
     clustersize[assignment[i]] += 1
 
-print(clustersize)
+#print(clustersize)
 
 trainnbrs = NearestNeighbors(n_neighbors=TargetK + 1, algorithm = 'brute').fit(train)
 traindistances, trainindices = trainnbrs.kneighbors(train)
 traindistances = traindistances[:, 1:TargetK+1]
 trainindices = trainindices[:, 1:TargetK+1]
-print(trainindices)
+#print(trainindices)
 
 TrainBeNNs = []
 for i in range(nt):
@@ -66,7 +66,7 @@ for i in range(nt):
                 break;
     TrainBeNNs.append(IthNNs)
 
-print(TrainBeNNs)
+#print(TrainBeNNs)
 
 
 
@@ -132,7 +132,7 @@ for i in conflictID:
 baseclusterdistances, baseclusterindices = clusternbrs.kneighbors(base)
 baseassignment  = baseclusterindices[[i for i in range(nb)], 0]
 
-print(baseassignment)
+#print(baseassignment)
 
 for i in range(nb):
     mindist = 1e9
@@ -143,7 +143,7 @@ for i in range(nb):
             if (vectordist < mindist):
                 baseassignment[i] = assignment[NN]
                 mindist = vectordist
-        
+
         for j in range(nt):
             if (assignment[j] == targetclusterID):
                 vectordist = math.dist(base[i], train[j])
@@ -154,16 +154,16 @@ for i in range(nb):
 originbaseassignment = baseclusterindices[[i for i in range(nb)], 0]
 baseconflictID = [i for i in range(nt) if originbaseassignment[i] != baseassignment[i]]
 
-print(assignment)
-print(originassignment)
-print(conflictID)
-print("The total number of conflict: ", len(conflictID))
+#print(assignment)
+#print(originassignment)
+#print(conflictID)
+#print("The total number of conflict: ", len(conflictID))
 
 plt.figure()
 vor = Voronoi(kmeans.cluster_centers_)
-voronoi_plot_2d(vor)
+voronoi_plot_2d(vor, line_colors = 'black', show_vertices = False, point_size = 15)
 for i in range(nc):
-    plt.scatter(kmeans.cluster_centers_[i, 0], kmeans.cluster_centers_[i, 1], marker = "D", color = colorlist[2*i%len(colorlist)])
+    #plt.scatter(kmeans.cluster_centers_[i, 0], kmeans.cluster_centers_[i, 1], marker = "D", color = colorlist[2*i%len(colorlist)])
     #plt.text(kmeans.cluster_centers_[i][0], kmeans.cluster_centers_[i][1], str(np.round(kmeans.cluster_centers_[i], 2)))
 
     ConflictCluster = [id for id in (conflictID) if originassignment[id] == i]
@@ -172,18 +172,24 @@ for i in range(nc):
 
     ConflictCluster = [id for id in conflictID if assignment[id] == i]
     filter_label = train[ConflictCluster]
-    plt.scatter(filter_label[:, 0], filter_label[:, 1], marker = 'X', color = colorlist[2*i%len(colorlist)])
+    #plt.scatter(filter_label[:, 0], filter_label[:, 1], marker = 'X', color = colorlist[2*i%len(colorlist)])
 
     ConflictCluster = [id for id in baseconflictID if baseassignment[id] == i]
     filter_label = base[ConflictCluster]
-    plt.scatter(filter_label[:, 0], filter_label[:, 1], color = colorlist[2*i%len(colorlist)], marker = '+')
+    #plt.scatter(filter_label[:, 0], filter_label[:, 1], color = colorlist[2*i%len(colorlist)], marker = '+')
 
     filter_label = base[baseassignment == i]
-    plt.scatter(filter_label[:, 0], filter_label[:, 1], color = colorlist[2*i%len(colorlist)], s = 1, marker = ',')
+    #plt.scatter(filter_label[:, 0], filter_label[:, 1], color = colorlist[2*i%len(colorlist)], s = 1, marker = ',')
 
     filter_label = train[assignment == i]
+    #plt.scatter(filter_label[:, 0], filter_label[:, 1], color = colorlist[2*i%len(colorlist)], s = 10)
+
+    filter_label = base[originassignment == i]
     plt.scatter(filter_label[:, 0], filter_label[:, 1], color = colorlist[2*i%len(colorlist)], s = 10)
 
+ax = plt.gca()
+ax.axes.xaxis.set_visible(False)
+ax.axes.yaxis.set_visible(False)
 plt.show()
 exit()
 

@@ -121,6 +121,7 @@ int main(){
         Cengraph->SaveInfo(PathCenGraphInfo);
     }
 
+    std::string PathBaseIDSeq    = PathNLFolder + "BaseID_nc" + NCString + "_Seq";
 
     if (!exists(PathBaseNeighborID) || !exists(PathBaseNeighborDist) || !exists(PathBaseIDSeq)){
         std::cout << "Assign the base vectors\n";
@@ -138,7 +139,7 @@ int main(){
 
 #pragma omp parallel for
             for (size_t j = 0; j < Assign_batch_size; j++){
-                auto result = Cengraph->searchBaseLayer(BaseAssignBatch.data() + j * Dimension, NeighborNum);
+                auto result = Cengraph->searchKnn(BaseAssignBatch.data() + j * Dimension, NeighborNum);
                 for (size_t k = 0; k < NeighborNum; k++){
                     BaseNeighborClusterIDBatch[j * NeighborNum + NeighborNum - k - 1] = result.top().second;
                     BaseNeighborClusterDistBatch[j * NeighborNum + NeighborNum - k - 1] = result.top().first;
@@ -155,38 +156,104 @@ int main(){
         BaseNeighborIDOutput.close();
         BaseNeighborDistOutput.close();
     }
+
+    /*------------------------------------*/
+    bool NeighborTest = true;
+    if (NeighborTest){
+        std::vector<float> Query (nq * Dimension);
+        std::vector<uint32_t> GT(nq * ngt);
+        std::ifstream GTInput(PathGt, std::ios::binary);
+        readXvec<uint32_t>(GTInput, GT.data(), ngt, nq, true, true);
+        std::ifstream QueryInput(PathQuery, std::ios::binary);
+        readXvecFvec<DataType>(QueryInput, Query.data(), Dimension, nq, true, true);
+        GTInput.close(); QueryInput.close();
+        
+        size_t KInEval = 1;
+        size_t Ef = 10000;
+        std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq); 
+
+        std::vector<uint32_t> BaseAssignment(nb);
+        std::vector<std::vector<uint32_t>> BaseIds(nc);
+        std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
+        BaseIDInput.read((char *) BaseAssignment.data(), nb * sizeof(uint32_t));
+        for (uint32_t i = 0; i < nb; i++){
+            assert(BaseAssignment[i] < nc);
+            BaseIds[BaseAssignment[i]].emplace_back(i);
+        }
+
+#pragma omp parallel for
+        for (size_t i = 0; i < nq; i++){
+            size_t VisitedGt = 0;
+            size_t VisitedVec = 0;
+
+            std::vector<uint32_t> QCID(Ef);
+            std::vector<float> QCDist(Ef);
+            std::unordered_set<uint32_t> QueryGT;
+            for (size_t j = 0; j < KInEval; j++){
+                QueryGT.insert(GT[i * ngt + j]);
+            }
+
+            auto result = Cengraph->searchBaseLayer(Query.data() + i * Dimension, Ef);
+            for (size_t j = 0; j < Ef; j++){
+                QCID[Ef - j - 1] = result.top().second;
+                QCDist[Ef - j - 1] = result.top().first;
+                result.pop();
+            }
+
+            VectorCost[i].first = BaseIds[QCID[0]].size();
+            for (size_t j =0; j < Ef; j++){
+                uint32_t ClusterID = QCID[j];
+
+                VisitedVec += BaseIds[ClusterID].size();
+                for (size_t k = 0; k < BaseIds[ClusterID].size(); j++){
+                    if (QueryGT.find(BaseIds[ClusterID][k]) != QueryGT.end()){
+                        VisitedGt ++;
+                    }
+                }
+                assert(VisitedGt <= KInEval);
+                if (VisitedGt == KInEval){
+                    break;
+                }
+            }
+            VectorCost[i].second = VisitedVec;
+        }
+
+        float Ratio = 0;
+        for (size_t i = 0; i < nq; i++){
+            Ratio += float(VectorCost[i].second - VectorCost[i].first) / VectorCost[i].second;
+        }
+        std::cout << "The ratio for K = " << KInEval << " is: " << Ratio / nq;
+        exit(0);
+    }
+    /*------------------------------------*/
+
+
     /*---------------------------------------------------------------------------------------------------------------------*/
-    std::vector<float> CentroidsDists(nc * ClusterDistNum);
-    std::vector<uint32_t> CentroidsIDs(nc * ClusterDistNum);
-    if (! exists(PathCentroidDist)){
+    std::vector<float> CentroidsNorm(nc);
+
+    if (! exists(PathCentroidNLNorm)){
         std::cout << "Computing the distance between centroid vectors \n";
 #pragma omp parallel for
         for (size_t i = 0; i < nc; i++){
-            auto result = Cengraph->searchKnn(Centroids.data(), ClusterDistNum + 1);
-            for (size_t j = 0; j < ClusterDistNum; j++){
-                CentroidsDists[i * ClusterDistNum + ClusterDistNum - j - 1] = result.top().first;
-                CentroidsDists[i * ClusterDistNum + ClusterDistNum - j - 1] = result.top().second;
-                result.pop();
-            }
+            CentroidsNorm[i] = faiss::fvec_norm_L2sqr(Cengraph->getDataByInternalId(i), Dimension);
         }
-        std::ofstream CentroidDistOutput(PathCentroidDist, std::ios::binary);
-        CentroidDistOutput.write((char *) CentroidsDists.data(), nc * ClusterDistNum * sizeof(float));
-        CentroidDistOutput.write((char *) CentroidsIDs.data(), nc * ClusterDistNum * sizeof(uint32_t));
+        std::ofstream CentroidDistOutput(PathCentroidNLNorm, std::ios::binary);
+        CentroidDistOutput.write((char *) CentroidsNorm.data(), nc * sizeof(float));
         CentroidDistOutput.close();
     }
     else{
-        std::ifstream CentroidDistInput(PathCentroidDist, std::ios::binary);
-        CentroidDistInput.read((char *) CentroidsDists.data(), nc * ClusterDistNum * sizeof(float));
-        CentroidDistInput.read((char *) CentroidsIDs.data(), nc * ClusterDistNum * sizeof(uint32_t));
+        std::ifstream CentroidDistInput(PathCentroidNLNorm, std::ios::binary);
+        CentroidDistInput.read((char *) CentroidsNorm.data(), nc * sizeof(float));
         CentroidDistInput.close();
     }
+
 
     /*---------------------------------*/
     ComputeNN(Graph_num_batch, SearchK, Datasetsize, TRecorder, MRecorder, NNDatasetName, PathNNDataset, PathDatasetNN, PathSubGraphFolder);
 
     /*---------------------------------------------------------------------------------------------------------------------*/
 
-    BuildNeighborList(SearchK, Assign_num_batch, Datasetsize, NeighborNum, NLTargetK, ClusterDistNum, BaseConflict, DistPrune, UseQuantize, QuantBatchSize, Cengraph, CentroidsDists.data(), CentroidsIDs.data(),
+    BuildNeighborList(SearchK, Assign_num_batch, Datasetsize, NeighborNum, NLTargetK, BaseConflict, DistPrune, UseQuantize, QuantBatchSize, Cengraph,
                         TRecorder, PathDatasetNN, PathNeighborList, PathNeighborListInfo, PathNNDataset, PathDatasetNeighborID, PathDatasetNeighborDist, PathBaseNeighborID, PathBaseNeighborDist);
 
 
@@ -207,6 +274,7 @@ int main(){
 
     // The Alpha value of neighbor lists
     float * NeighborListAlpha = nullptr;
+    float * NeighborListAlphaNorm = nullptr;
     // The target cluster ID of neighbor lists
     uint32_t * NeighborListAlphaTar = nullptr;
     // 
@@ -225,7 +293,6 @@ int main(){
     uint32_t * NeighborListTarID = nullptr;
     //
     uint32_t * NeighborListTarIDIndice = nullptr;
-
 
     uint32_t NumAlphaList, NumVecID, NumTarList, MaxVecListSize, MaxTarListSize, MaxAlphaListSize, 
             CompNumAlpha, CompNumVecID, CompNumTar, CompTarID;
@@ -282,6 +349,7 @@ int main(){
 
         // The Alpha value of neighbor lists, not compressed
         NeighborListAlpha = new float[NumAlphaList];
+        NeighborListAlphaNorm = new float[NumAlphaList];
         // The target cluster ID of neighbor lists
         NeighborListAlphaTar = new uint32_t[CompNumAlpha];
         // 
@@ -300,6 +368,7 @@ int main(){
         NeighborListTarIDIndice = new uint32_t[nc];
         
         NeighborListInput.read((char *) NeighborListAlpha, NumAlphaList * sizeof(float));
+        NeighborListInput.read((char *) NeighborListAlphaNorm, NumAlphaList * sizeof(float));
         NeighborListInput.read((char *) NeighborListAlphaIndice, nc * sizeof(uint32_t));
         NeighborListInput.read((char *) NeighborListAlphaTar, CompNumAlpha * sizeof(uint32_t));        
         NeighborListInput.read((char *) NeighborListAlphaCompIndice, nc * sizeof(uint32_t));
@@ -368,29 +437,60 @@ int main(){
 */
     }
 
-    /* Load the neighbor list for test*/
-
     // Do the query and evaluate
-    uint32_t DeCompVecID[MaxVecListSize];
-    uint32_t DeCompNumTar[MaxVecListSize];
-    uint32_t DeCompTarID[MaxTarListSize];
-    uint32_t DeCompAlphaTarID[MaxAlphaListSize];
 
+    std::vector<std::vector<uint32_t>> BaseCompIds(nc);
+    uint32_t BaseIdCompIndice[nc];
+    size_t MaxClusterSize = 0;
+    if (!exists(PathBaseAssignComp)){
+        std::vector<uint32_t> BaseAssignment(nb);
+        std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
+        BaseIDInput.read((char *) BaseAssignment.data(), nb * sizeof(uint32_t));
+        for (uint32_t i = 0; i < nb; i++){
+            assert(BaseAssignment[i] < nc);
+            BaseCompIds[BaseAssignment[i]].emplace_back(i);
+        }
+
+        for (uint32_t i = 0; i < nc; i++){
+            if (BaseCompIds[i].size() > MaxClusterSize){
+                MaxClusterSize = BaseCompIds[i].size();
+            }
+            std::vector<uint32_t> CompressedIds(BaseCompIds[i].size() + 1024);
+            size_t CompressedSize = CompressedIds.size();
+            codec.encodeArray(BaseCompIds[i].data(), BaseCompIds[i].size(), CompressedIds.data(), CompressedSize);
+            BaseIdCompIndice[i] = i == 0 ? CompressedSize : BaseIdCompIndice[i - 1] + CompressedSize;
+            memcpy(BaseCompIds[i].data(), CompressedIds.data(), CompressedSize * sizeof(uint32_t));
+            BaseCompIds[i].resize(CompressedSize);
+        }
+        std::ofstream BaseAssignCompOutput (PathBaseAssignComp, std::ios::binary);
+        BaseAssignCompOutput.write((char *) & MaxClusterSize, sizeof(size_t));
+        BaseAssignCompOutput.write((char *)BaseIdCompIndice, nc * sizeof(uint32_t));
+        for (uint32_t i = 0; i < nc; i++){
+            BaseAssignCompOutput.write((char *) BaseCompIds[i].data(), BaseCompIds[i].size() * sizeof(uint32_t));
+        }
+        BaseAssignCompOutput.close();
+    }
+    else{
+        std::ifstream BaseAssignCompInput(PathBaseAssignComp, std::ios::binary);
+        BaseAssignCompInput.read((char *) & MaxClusterSize, sizeof(size_t));
+        BaseAssignCompInput.read((char *) BaseIdCompIndice, nc * sizeof(uint32_t));
+        for (uint32_t i = 0; i < nc; i++){
+            BaseCompIds[i].resize(i == 0 ? BaseIdCompIndice[0] : BaseIdCompIndice[i] - BaseIdCompIndice[i - 1]);
+            BaseAssignCompInput.read((char *) BaseCompIds[i].data(), BaseCompIds[i].size() * sizeof(uint32_t));
+        }
+    }
+
+    uint32_t DeCompVecID[MaxVecListSize + 1024];
+    uint32_t DeCompNumTar[MaxVecListSize + 1024];
+    uint32_t DeCompTarID[MaxTarListSize + 1024];
+    uint32_t DeCompAlphaTarID[MaxAlphaListSize + 1024];
+    uint32_t DeCompBaseIDs[MaxClusterSize + 1024];
 
     bool NeighborListOnly = true;
     bool UseList = true;
 
     bool SearchQuant = false;
-    //nq = 1000;
-    std::vector<uint32_t> BaseAssignment(nb);
-    std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
-    std::vector<std::vector<uint32_t>> BaseIds(nc);
-    BaseIDInput.read((char *) BaseAssignment.data(), nb * sizeof(uint32_t));
-
-    for (uint32_t i = 0; i < nb; i++){
-        assert(BaseAssignment[i] < nc);
-        BaseIds[BaseAssignment[i]].emplace_back(i);
-    }
+    //nq = 1;
 
     //std::cout << "Start Evaluate the query" << std::endl;
     std::vector<float> Query (nq * Dimension);
@@ -403,8 +503,10 @@ int main(){
     std::string SearchMode = "NonParallel";
 
     // Validation on the nieghbor list for upper bound
-    bool Validation = false;
-    size_t EvalK = 5;
+    bool Validation = true;
+    bool QualityTest = true;
+    size_t EvalK = 1;
+
     if(Validation){
     for (size_t ParaIdx = 0;  ParaIdx < NumPara; ParaIdx++){
         float SumVisitedGt = 0;
@@ -414,8 +516,11 @@ int main(){
         size_t NumCluster = EfSearch[ParaIdx];
         size_t MaxElements = MaxItem[ParaIdx];
 
+        std::vector<std::pair<uint32_t, uint32_t>> QualityList(MaxElements);
+
         std::vector<uint32_t> QCID(nq * NumCluster);
         std::vector<float> QCDist(nq * NumCluster);
+        size_t CompSize = 0;
 
         for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
 
@@ -442,18 +547,30 @@ int main(){
             uint32_t CenClusterID = QCID[QueryIdx * NumCluster];
             //std::cout << "\n Target Cluster ID: " << TargetClusterID << "\n";
             // For the target cluster, search all vectors in the cluster
-            for (size_t j = 0; j < BaseIds[CenClusterID].size(); j++){
-                if (QueryGT.find(BaseIds[CenClusterID][j]) != QueryGT.end()){
-                    //std::cout << "Gt " << BaseIds[TargetClusterID][j] << " | ";
+
+            CompSize = MaxClusterSize + 1024;
+            codec.decodeArray(BaseCompIds[CenClusterID].data(), BaseCompIds[CenClusterID].size(), DeCompBaseIDs, CompSize);
+            for (size_t j = 0; j < CompSize; j++){
+                VisitedVec ++;
+
+                if (QueryGT.find(DeCompBaseIDs[j]) != QueryGT.end()){
                     VisitedGt ++;
                 }
-                //std::cout << BaseIds[TargetClusterID][j] << " ";
+
+                if (QualityTest){
+
+                    QualityList[VisitedVec - 1].first ++;
+                    QualityList[VisitedVec - 1].second += VisitedGt;
+                }
+
+                if (VisitedVec >= MaxElements){
+                    SumVisitedVec += VisitedVec;
+                    SumVisitedGt += VisitedGt;
+                    break;
+                }
             }
 
-            VisitedVec += BaseIds[CenClusterID].size();
-            if (VisitedVec > MaxElements){
-                SumVisitedVec += VisitedVec;
-                SumVisitedGt += VisitedGt;
+            if (VisitedVec >= MaxElements){
                 continue;
             }
 
@@ -477,12 +594,10 @@ int main(){
                     CompStartIndice = NNClusterID == 0 ? 0 : NeighborListAlphaCompIndice[NNClusterID - 1];
                     CompIndice = NeighborListAlphaCompIndice[NNClusterID] - CompStartIndice;
                     if (CompIndice == 0){continue;}
-                    CompSize1 = MaxAlphaListSize;
+                    CompSize1 = MaxAlphaListSize + 1024;
 
                     //memcpy(DeCompAlphaTarID, NeighborListAlphaTar + CompStartIndice, CompIndice * sizeof(uint32_t));
                     //CompSize1 = CompIndice;
-
-                    
 
                     codec.decodeArray(NeighborListAlphaTar + CompStartIndice, CompIndice, DeCompAlphaTarID, CompSize1);
 
@@ -499,18 +614,41 @@ int main(){
                             if (TargetClusterID == DeCompAlphaTarID[temp]){
                                 NumFoundNL ++;
                                 float Alpha = NeighborListAlpha[StartIndice + temp];
-                                float CentroidDist = GetCentroidDist(TargetClusterID, NNClusterID, ClusterDistNum, CentroidsDists.data(), CentroidsIDs.data(), Cengraph);
-                                float QueryNLDist = FetchQueryNLDist(QCDist[QueryIdx * NumCluster + j], QCDist[QueryIdx * NumCluster + i], CentroidDist, Alpha);
+                                float AlphaNorm = NeighborListAlphaNorm[StartIndice + temp];
 
+                                float QueryNLDist = (1 - Alpha) * (QCDist[QueryIdx * NumCluster + i] - CentroidsNorm[NNClusterID]) + Alpha * (QCDist[QueryIdx * NumCluster + j] - CentroidsNorm[TargetClusterID]) + AlphaNorm;
+
+                                float CentroidDist = faiss::fvec_L2sqr(Cengraph->getDataByInternalId(NNClusterID), Cengraph->getDataByInternalId(TargetClusterID), Dimension);
+                                float QueryNLDist_ = FetchQueryNLDist(QCDist[QueryIdx * NumCluster + j], QCDist[QueryIdx * NumCluster + i], CentroidDist, Alpha);
+
+                                std::vector<float> AlphaCentroid(Dimension);
+                                for (size_t k = 0; k < Dimension; k++){
+                                    AlphaCentroid[k] = Cengraph->getDataByInternalId(NNClusterID)[k] * (1 - Alpha) + Cengraph->getDataByInternalId(TargetClusterID)[k] * (Alpha);
+                                }
+                                float QueryNLCorrect = faiss::fvec_L2sqr(AlphaCentroid.data(), Query.data() + QueryIdx * Dimension, Dimension);
+
+/*
+                                std::cout << Alpha << " " << QCDist[QueryIdx * NumCluster + i] << " " << NNClusterID << " " << CentroidsNorm[NNClusterID] << " " << 
+                                QCDist[QueryIdx * NumCluster + j] << " " << CentroidsNorm[TargetClusterID] << " " << AlphaNorm << "\n";
+                                std::cout << QueryNLDist << " " << QueryNLDist_ << " " << QueryNLCorrect << "\n";
+                                
+
+                                std::cout << "Check 1: " << faiss::fvec_norm_L2sqr(AlphaCentroid.data(), Dimension) - (1 - Alpha) * CentroidsNorm[NNClusterID] - Alpha * CentroidsNorm[TargetClusterID];
+                                std::cout << "Check 2: " << Alpha * (1 - Alpha) * CentroidDist << "\n";
+*/
+
+                                //assert(QueryNLDist > QueryNLDist);
                                 int64_t NLIndice = i * NumCluster + j;
                                 if (QueryNLDist < NL2SearchDist[0]){
                                     faiss::maxheap_pop(EfNList[ParaIdx], NL2SearchDist, NL2SearchID);
                                     faiss::maxheap_push(EfNList[ParaIdx],NL2SearchDist, NL2SearchID, QueryNLDist, NLIndice);
                                 }
+                                
                                 break;
                             }
                         }
                     }
+                    //exit(0);
                 }
 /*
             std::cout << "Form the target cluster set\n";
@@ -548,6 +686,9 @@ int main(){
                 }
                 // Search the vectors in these NNClusters
                 for (size_t i = 0; i < NumCluster - 1; i++){
+                    if (VisitedVec >= MaxElements){
+                        break;
+                    }
 
                     if (ClusterIDSetIndice[i] == 0){continue;}
 
@@ -556,7 +697,7 @@ int main(){
 
                     CompStartIndice = NNClusterID == 0 ? 0 : NeighborListVecIndice[NNClusterID - 1];
                     CompIndice = NeighborListVecIndice[NNClusterID] - CompStartIndice;
-                    CompSize1 = MaxVecListSize;
+                    CompSize1 = MaxVecListSize + 1024;
 
                     //memcpy(DeCompVecID, NeighborListVec + CompStartIndice, CompIndice * sizeof(uint32_t));
                     //CompSize1 = CompIndice;
@@ -565,7 +706,7 @@ int main(){
 
                     CompStartIndice = NNClusterID == 0 ? 0 : NeighborListNumTarIndice[NNClusterID - 1];
                     CompIndice = NeighborListNumTarIndice[NNClusterID] - CompStartIndice;
-                    CompSize2 = MaxVecListSize;
+                    CompSize2 = MaxVecListSize + 1024;
                     
                     //memcpy(DeCompNumTar, NeighborListNumTar + CompStartIndice, CompIndice * sizeof(uint32_t));
                     //CompSize2 = CompIndice;
@@ -573,7 +714,7 @@ int main(){
 
                     CompStartIndice = NNClusterID == 0 ? 0 : NeighborListTarIDIndice[NNClusterID - 1];
                     CompIndice = NeighborListTarIDIndice[NNClusterID] - CompStartIndice;
-                    CompSize3 = MaxTarListSize;
+                    CompSize3 = MaxTarListSize + 1024;
 
                     //memcpy(DeCompTarID, NeighborListTarID + CompStartIndice, CompIndice * sizeof(uint32_t));
                     //CompSize3 = CompIndice;
@@ -585,13 +726,27 @@ int main(){
                     for (size_t temp = 0; temp < CompSize1; temp++){
                         VisitedNLNum ++;
                         bool CheckFlag = Intersect(DeCompTarID + Indice, DeCompTarID + Indice + DeCompNumTar[temp], ClusterIDSet[i], ClusterIDSet[i] + ClusterIDSetIndice[i]);
+                        
                         if (CheckFlag){
+                            
                             VisitedNLSize += 1;
+
                             VisitedVec += 1;
+
                             uint32_t VectorID = DeCompVecID[temp];
                             VisitedVecSet.insert(VectorID);
+
                             if (QueryGT.find(VectorID) != QueryGT.end()){
                                 VisitedGt ++;
+                            }
+
+                            if (QualityTest){
+                                QualityList[VisitedVec - 1].first ++;
+                                QualityList[VisitedVec - 1].second += VisitedGt;
+                            }
+
+                            if (VisitedVec >= MaxElements){
+                                break;
                             }
                         }
                         Indice += DeCompNumTar[temp];
@@ -605,22 +760,35 @@ int main(){
 
             if (!NeighborListOnly){
                 for (size_t j = 1; j < NumCluster; j++){
-                    
-                    if (VisitedVec > MaxElements){break;}
+
+                    if (VisitedVec >= MaxElements){break;}
 
                     uint32_t NNClusterID = QCID[QueryIdx * NumCluster + j];
-                    size_t ClusterSize = BaseIds[NNClusterID].size();
+
+                    CompSize = MaxClusterSize + 1024;
+                    codec.decodeArray(BaseCompIds[NNClusterID].data(), BaseCompIds[NNClusterID].size(), DeCompBaseIDs, CompSize);
 
                     // The NNCluster is partly searched in the NL, search the remaining part
-                    for (size_t k = 0; k < ClusterSize; k++){
-                        if (VisitedVecSet.find(BaseIds[NNClusterID][k]) ==  VisitedVecSet.end()){
-                            VisitedVecSet.insert(BaseIds[NNClusterID][k]);
-                            if (QueryGT.find(BaseIds[NNClusterID][k]) != QueryGT.end()){
-                                //std::cout << "Gt in Cluster: " << BaseIds[NNClusterID][k] << " " << j << " | ";
-                                //std::cout << BaseIds[NNClusterID][k] << " found\n";
+                    for (size_t k = 0; k < CompSize; k++){
+
+                        if (VisitedVecSet.find(DeCompBaseIDs[k]) ==  VisitedVecSet.end()){
+                            VisitedVecSet.insert(DeCompBaseIDs[k]);
+
+                            VisitedVec ++;
+                            if (QueryGT.find(DeCompBaseIDs[k]) != QueryGT.end()){
+                                //std::cout << "Gt in Cluster: " << DeCompBaseIDs[k] << " " << j << " | ";
+                                //std::cout << DeCompBaseIDs[k] << " found\n";
                                 VisitedGt ++;
                             }
-                            VisitedVec ++;
+
+                            if (QualityTest){
+                                QualityList[VisitedVec - 1].first ++;
+                                QualityList[VisitedVec - 1].second += VisitedGt;
+                            }
+
+                            if (VisitedVec >= MaxElements){
+                                break;
+                            }
                         }
                     }
                 }
@@ -632,8 +800,25 @@ int main(){
             SumVisitedVec += VisitedVec;       
         }
 
+        std::cout << SumVisitedGt << "\n";
         std::cout << "\nThe average Recall of " << EvalK << " nearest neighbors: " << SumVisitedGt / (nq * EvalK) << " Number of clusters: " << NumCluster << " Num of vectors: " << SumVisitedVec / nq << " Num of NL vectors: " << SumVisitedNLSize / nq << " Total number of NL: " << SumVisitedNLNum / (nq) << " Number of NList: " << EfNList[ParaIdx] << " Number of clusters: " << NumCluster << " MaxElements: " << MaxElements << "\n";     
         //break;
+
+        
+        if (QualityTest)
+        for (size_t i = 0; i < QualityList.size(); i++){
+            if ((i + 1) % 1000 == 0){
+                std::cout << i << " " << float(QualityList[i].second) << " " << float(QualityList[i].first) << " " << float(QualityList[i].second) / float(QualityList[i].first * EvalK) << " | ";
+            }
+        }
+/*
+        std::cout << "[";
+        for (size_t i = 0; i < QualityList.size(); i++){
+            std::cout << float(QualityList[i].second) / float(QualityList[i].first * EvalK) << ", ";
+        }
+        std::cout << "]";
+*/
+        exit(0);
     }
     exit(0);
     }
@@ -679,14 +864,25 @@ int main(){
                                         //BaseCodes.data(), BaseIds, QuanNeighborList, NeighborListAlpha, NeighborListAlphaTar, NeighborListAlphaIndice, NeighborListVecIndice, NeighborListVecIndice);
             }
             else{
-                NumVisitedItem = SearchMultiFull(TRecorder, nq, RecallK[i], ClusterDistNum, Query.data(), QueryIds.data(), QueryDists.data(), 
-                                                 EfSearch[j], MaxItem[j], EfNList[j], UseList, Cengraph, CentroidsDists.data(), CentroidsIDs.data(),
-                                                 QCDist.data(), QCID.data(), BaseIds, NeighborListAlpha, NeighborListAlphaTar,
+                /*
+                NumVisitedItem = SearchMultiFull(TRecorder, nq, RecallK[i], Query.data(), QueryIds.data(), QueryDists.data(), 
+                                                 EfSearch[j], MaxItem[j], EfNList[j], UseList, Cengraph,
+                                                 QCDist.data(), QCID.data(), BaseCompIds, CentroidsNorm.data(), BaseIdCompIndice, NeighborListAlpha, NeighborListAlphaNorm, NeighborListAlphaTar,
                                                  NeighborListAlphaIndice, NeighborListAlphaCompIndice, NeighborListVec, 
                                                  NeighborListVecIndice, NeighborListNumTarIndice, NeighborListNumTar, NeighborListTarIDIndice,
                                                  NeighborListTarID, NL2SearchID, NL2SearchDist, BaseVectors.data(), DeCompAlphaTarID, 
                                                  DeCompVecID, DeCompNumTar, DeCompTarID, ClusterIDSet, ClusterIDSetIndice, codec, 
                                                  MaxAlphaListSize, MaxVecListSize, MaxTarListSize);
+                */
+            
+                NumVisitedItem = SearchMultiFull(TRecorder, nq, RecallK[i], Query.data(), QueryIds.data(), QueryDists.data(),
+                                                 EfSearch[j], MaxItem[j], EfNList[j], UseList, Cengraph, QCDist.data(), QCID.data(), 
+                                                 BaseCompIds, CentroidsNorm.data(), BaseIdCompIndice, NeighborListAlpha, NeighborListAlphaNorm,
+                                                 NeighborListAlphaTar, NeighborListAlphaIndice, NeighborListAlphaCompIndice, NeighborListVec, 
+                                                 NeighborListVecIndice, NeighborListNumTarIndice, NeighborListNumTar, NeighborListTarIDIndice, 
+                                                 NeighborListTarID, NL2SearchID, NL2SearchDist, BaseVectors.data(), DeCompBaseIDs, DeCompAlphaTarID,
+                                                 DeCompVecID, DeCompNumTar, DeCompTarID, ClusterIDSet, ClusterIDSetIndice, codec, MaxAlphaListSize, 
+                                                 MaxVecListSize, MaxTarListSize);        
             }
 
             WholeTime = TempRecorder.getTimeConsumption();
@@ -756,6 +952,7 @@ int main(){
 
 
     free(NeighborListAlpha);
+    free(NeighborListAlphaNorm);
     free(NeighborListAlphaTar);
     free(NeighborListAlphaIndice);
     free(NeighborListAlphaCompIndice);
@@ -891,7 +1088,8 @@ cos(qc1c2): (||c1, q|| + ||c1, c2|| - ||c2, q||) / 2 * |c1, q| * |c1, c2|
 
     /*---------------------------------------------------------------------------------------------------------------------*/
 
-
+    std::vector<std::vector<uint32_t>> BaseIds;
+    std::vector<uint32_t> BaseAssignment;
     std::cout << "The cluster size: ";
     for (size_t i = 0; i < 10; i++){
         std::cout << BaseIds[i].size() << " ";
@@ -1123,6 +1321,7 @@ cos(qc1c2): (||c1, q|| + ||c1, c2|| - ||c2, q||) / 2 * |c1, q| * |c1, c2|
         // Two choices: Use the average boundary distance / Use the average boundary distance and the average centroid distance
 
         uint32_t NLVectorSize = 0;
+        std::vector<float> CentroidsDists;
         // Calcultae the distance that is related to the cluster and boundary
         // Struct: targetclusterID, NNClusterID, SumBoundDist, SumTarCenDist, SumNNCenDist. SumDistRatio
         std::map<std::pair<uint32_t, uint32_t>, std::pair<uint32_t, std::tuple<float, float, float, float>>> BoundaryConflictDistMap;

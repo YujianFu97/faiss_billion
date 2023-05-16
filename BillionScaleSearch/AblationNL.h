@@ -20,10 +20,13 @@ struct  nlcmp
     }
 };
 
-// = (2 * alpha - alpha * alpha) * ||q - CenT|| + (1 - alpha * alpha) * ||q - CenN|| + 2 * alpha * (alpha - 1) * ||CenT - CenN||
+// ||q - (CN + alpha * (CT - CN))|| = ||q - (1 - alpha)CN - alpha * CT||
+// = (1 - Alpha) * ||q - CenN|| + Alpha * ||q - CenT|| + Alpha * (1 - Alpha) * ||CenN - CenT||
+// Wrong: = (2 * alpha - alpha * alpha) * ||q - CenT|| + (1 - alpha * alpha) * ||q - CenN|| + 2 * alpha * (alpha - 1) * ||CenT - CenN||
 inline float FetchQueryNLDist(float QCenTarDist, float QCenNNDist, float CenNNCenTarDist, float alpha){
-    float alphasqaure = alpha * alpha;
-    return (2 * alpha - alphasqaure) * QCenTarDist + (1 - alphasqaure) * QCenNNDist + 2 * (alphasqaure - alpha) * CenNNCenTarDist;
+    //float alphasqaure = alpha * alpha;
+    //return (2 * alpha - alphasqaure) * QCenTarDist + (1 - alphasqaure) * QCenNNDist + 2 * (alphasqaure - alpha) * CenNNCenTarDist;
+    return (1 - alpha) * QCenNNDist + alpha * QCenTarDist - alpha * (1 - alpha) * CenNNCenTarDist;
 }
 
 template<typename T>
@@ -116,34 +119,15 @@ void PrintNL(std::vector<std::unordered_map<uint32_t, std::vector<uint32_t>>> & 
     return;
 }
 
-float GetCentroidDist(uint32_t TargetClusterID, uint32_t NNClusterID, uint32_t ClusterDistNum,
-float * CentroidsDists, uint32_t * CentroidsIds, hnswlib::HierarchicalNSW * CenGraph){
-    float CentroidDist = -1;
-    uint32_t CentroidIndice1 = TargetClusterID * ClusterDistNum; uint32_t CentroidIndice2 = NNClusterID * ClusterDistNum;
-    for (size_t temp0 = 0; temp0 < ClusterDistNum; temp0++){
-        if (CentroidsIds[CentroidIndice1 + temp0] == NNClusterID){
-            CentroidDist = CentroidsDists[CentroidIndice1 + temp0];
-            break;
-        }
-        else if(CentroidsIds[CentroidIndice2 + temp0] == TargetClusterID){
-            CentroidDist = CentroidsDists[CentroidIndice2 + temp0];
-            break;
-        }
-    }
-    if (CentroidDist < 0){CentroidDist = faiss::fvec_L2sqr(CenGraph->getDataByInternalId(NNClusterID), CenGraph->getDataByInternalId(TargetClusterID), Dimension);}
-    return CentroidDist;
-}
-
-uint32_t SearchMultiFull(time_recorder & Trecorder, size_t nq, size_t RecallK, size_t ClusterDistNum, float * Query, int64_t * QueryIds, float * QueryDists, size_t EfSearch, size_t MaxItem, size_t EfNeighborList, bool UseList,
-hnswlib::HierarchicalNSW * CenGraph, float * CentroidsDists, uint32_t * CentroidsIds, float * QCDist, uint32_t * QCID, std::vector<std::vector<uint32_t>> & BaseIds,
-float * NeighborListAlpha, uint32_t * NeighborListAlphaTar, uint32_t * NeighborListAlphaIndice, uint32_t * NeighborListAlphaCompIndice, uint32_t * NeighborListVec, uint32_t * NeighborListVecIndice,
+uint32_t SearchMultiFull(time_recorder & Trecorder, size_t nq, size_t RecallK, float * Query, int64_t * QueryIds, float * QueryDists, size_t EfSearch, size_t MaxItem, size_t EfNeighborList, bool UseList,
+hnswlib::HierarchicalNSW * CenGraph, float * QCDist, uint32_t * QCID, std::vector<std::vector<uint32_t>> & BaseCompIds, float * CentroidsNorm, uint32_t * BaseIdCompIndice,
+float * NeighborListAlpha, float * NeighborListAlphaNorm, uint32_t * NeighborListAlphaTar, uint32_t * NeighborListAlphaIndice, uint32_t * NeighborListAlphaCompIndice, uint32_t * NeighborListVec, uint32_t * NeighborListVecIndice,
 uint32_t * NeighborListNumTarIndice, uint32_t * NeighborListNumTar, uint32_t * NeighborListTarIDIndice, uint32_t * NeighborListTarID,
-int64_t * NL2SearchID, float * NL2SearchDist, DataType * BaseVectors, uint32_t * DeCompAlphaTarID, uint32_t * DeCompVecID, uint32_t * DeCompNumTar, uint32_t * DeCompTarID, int64_t * ClusterIDSet, uint32_t * ClusterIDSetIndice,
+int64_t * NL2SearchID, float * NL2SearchDist, DataType * BaseVectors, uint32_t * DeCompBaseIDs, uint32_t * DeCompAlphaTarID, uint32_t * DeCompVecID, uint32_t * DeCompNumTar, uint32_t * DeCompTarID, int64_t * ClusterIDSet, uint32_t * ClusterIDSetIndice,
 FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecListSize, uint32_t MaxTarListSize
 ){
-    size_t CompStartIndice, CompIndice, CompSize1, CompSize2, CompSize3, StartIndice, EndIndice, SumVisitedItem = 0;
+    size_t CompStartIndice, CompIndice, CompSize, CompSize1, CompSize2, CompSize3, StartIndice, EndIndice, SumVisitedItem = 0;
 
-    
     for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
         auto ResultQueue = CenGraph->searchBaseLayer(Query + QueryIdx * Dimension, EfSearch);
         for (size_t i = 0; i < EfSearch; i++){
@@ -159,22 +143,24 @@ FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecLis
         size_t VisitedItem = 0;
         uint32_t CenClusterID = QCID[QueryIdx * EfSearch];
         // Search the vectors in the base target cluster
-        for (size_t j = 0; j < BaseIds[CenClusterID].size(); j++){
-            float Dist = faiss::fvec_L2sqr(BaseVectors + BaseIds[CenClusterID][j] * Dimension, Query + QueryIdx * Dimension, Dimension);
+
+        codec.decodeArray(BaseCompIds[CenClusterID].data(), BaseCompIds[CenClusterID].size(), DeCompBaseIDs, CompSize);
+        for (size_t j = 0; j < CompSize; j++){
+            float Dist = faiss::fvec_L2sqr(BaseVectors + DeCompBaseIDs[j] * Dimension, Query + QueryIdx * Dimension, Dimension);
 
             if (Dist < QueryDists[QueryIdx * RecallK]){
                 faiss::maxheap_pop(RecallK, QueryDists + QueryIdx * RecallK, QueryIds + QueryIdx * RecallK);
-                faiss::maxheap_push(RecallK, QueryDists + QueryIdx * RecallK, QueryIds + QueryIdx * RecallK, Dist, BaseIds[CenClusterID][j]);
+                faiss::maxheap_push(RecallK, QueryDists + QueryIdx * RecallK, QueryIds + QueryIdx * RecallK, Dist, DeCompBaseIDs[j]);
             }
         }
-        VisitedItem += BaseIds[CenClusterID].size();
+
+        VisitedItem += CompSize;
 
         if (VisitedItem > MaxItem){
             SumVisitedItem += VisitedItem;
             continue;
         }
         
-
         if (UseList){
             //Trecorder.reset();
             // Todo: remove this assertion
@@ -207,20 +193,8 @@ FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecLis
                     for (size_t temp = 0; temp < CompSize1; temp++){
                         if (TargetClusterID == DeCompAlphaTarID[temp]){
                             float Alpha = NeighborListAlpha[StartIndice + temp];
-                            float CentroidDist = -1;
-                            uint32_t CentroidIndice1 = TargetClusterID * ClusterDistNum; uint32_t CentroidIndice2 = NNClusterID * ClusterDistNum;
-                            for (size_t temp0 = 0; temp0 < ClusterDistNum; temp0++){
-                                if (CentroidsIds[CentroidIndice1 + temp0] == NNClusterID){
-                                    CentroidDist = CentroidsDists[CentroidIndice1 + temp0];
-                                    break;
-                                }
-                                else if(CentroidsIds[CentroidIndice2 + temp0] == TargetClusterID){
-                                    CentroidDist = CentroidsDists[CentroidIndice2 + temp0];
-                                    break;
-                                }
-                            }
-                            if (CentroidDist < 0){CentroidDist = faiss::fvec_L2sqr(CenGraph->getDataByInternalId(NNClusterID), CenGraph->getDataByInternalId(TargetClusterID), Dimension);}
-                            float QueryNLDist = FetchQueryNLDist(QCDist[QueryIdx * EfSearch + j], QCDist[QueryIdx * EfSearch + i], CentroidDist, Alpha);
+                            float AlphaNorm = NeighborListAlphaNorm[StartIndice + temp];
+                            float QueryNLDist = (1 - Alpha) * (QCDist[QueryIdx * EfSearch + i] - CentroidsNorm[NNClusterID]) + Alpha * (QCDist[QueryIdx * EfSearch + j] - CentroidsNorm[TargetClusterID]) + AlphaNorm;
 
                             int64_t NLIndice = i * EfSearch + j;
                             if (QueryNLDist < NL2SearchDist[0]){
@@ -343,11 +317,11 @@ FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecLis
 
                 uint32_t NNClusterID = QCID[QueryIdx * EfSearch + i];
 
-                size_t ClusterSize = BaseIds[NNClusterID].size();
+                codec.decodeArray(BaseCompIds[NNClusterID].data(), BaseCompIds[NNClusterID].size(), DeCompBaseIDs, CompSize);
 
                 // The NNCluster is partly searched in the NL, search the remaining part
-                for (size_t j = 0; j < ClusterSize; j++){
-                    uint32_t VectorID = BaseIds[NNClusterID][j];
+                for (size_t j = 0; j < CompSize; j++){
+                    uint32_t VectorID = DeCompBaseIDs[j];
                     VisitedItem ++;
                     float Dist = faiss::fvec_L2sqr(BaseVectors + VectorID * Dimension, Query + QueryIdx * Dimension, Dimension);
                     if (Dist < QueryDists[QueryIdx * RecallK]){
@@ -355,6 +329,7 @@ FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecLis
                         faiss::maxheap_push(RecallK, QueryDists + QueryIdx * RecallK, QueryIds + QueryIdx * RecallK, Dist, VectorID);
                     }
                 }
+
             }
         }
         //Trecorder.recordTimeConsumption3();
@@ -916,8 +891,8 @@ std::string NNDatasetName, std::string PathDataset, std::string PathDatasetNN, s
 
 
 void BuildNeighborList(
-    size_t SearchK, size_t Num_batch, size_t DatasetSize, size_t NeighborNum, size_t NLTargetK, size_t ClusterDistNum, bool BaseConflict, bool DistPrune, bool UseQuantize, size_t QuantBatchSize,
-    hnswlib::HierarchicalNSW * CenGraph, float * CentroidsDists, uint32_t * CentroidsIds, time_recorder & TRecorder, 
+    size_t SearchK, size_t Num_batch, size_t DatasetSize, size_t NeighborNum, size_t NLTargetK, bool BaseConflict, bool DistPrune, bool UseQuantize, size_t QuantBatchSize,
+    hnswlib::HierarchicalNSW * CenGraph, time_recorder & TRecorder, 
     std::string PathDatasetNN, std::string PathNeighborList, std::string PathNeighborListInfo, std::string PathNNDataset, std::string PathDatasetNeighborID, 
     std::string PathDatasetNeighborDist, std::string PathBaseNeighborID, std::string PathBaseNeighborDist
 ){
@@ -1112,10 +1087,11 @@ void BuildNeighborList(
                             if (TargetClusterDist < 0){
                                 TargetClusterDist = faiss::fvec_L2sqr(DatasetBatch.data() + j * Dimension, CenGraph->getDataByInternalId(TargetClusterID), Dimension);
                             }
+                            if (NNClusterDist > TargetClusterDist){ std::cout << NNClusterDist << " " << TargetClusterDist << "\n";}
                             assert(NNClusterDist <= TargetClusterDist);
 
+                            float CentroidDist = faiss::fvec_L2sqr(CenGraph->getDataByInternalId(NNClusterID), CenGraph->getDataByInternalId(TargetClusterID), Dimension);
 
-                            float CentroidDist = GetCentroidDist(TargetClusterID, NNClusterID, ClusterDistNum, CentroidsDists, CentroidsIds, CenGraph);
                             // Compute the distance between the vector and the boundary
                             float CosNLNNTarget = (NNClusterDist + CentroidDist - TargetClusterDist) / (2 * sqrt(NNClusterDist * CentroidDist));
                             // Note this is sqrt distance, Todo: we use the boundary or the centroid distance?
@@ -1253,7 +1229,8 @@ void BuildNeighborList(
                                     std::cout << VectorID << " " << NNClusterID << " " << NNClusterDist << " " << TargetClusterID << " " << TargetClusterDist << "\n";
                                     exit(0);
                                 }
-                                float CentroidDist = GetCentroidDist(TargetClusterID, NNClusterID, ClusterDistNum, CentroidsDists, CentroidsIds, CenGraph);
+
+                                float CentroidDist = faiss::fvec_L2sqr(CenGraph->getDataByInternalId(NNClusterID), CenGraph->getDataByInternalId(TargetClusterID), Dimension);
 
                                 float CosVecNNTarget = (NNClusterDist + CentroidDist - TargetClusterDist) / (2 * sqrt(NNClusterDist * CentroidDist));
                                 float DistNLBoundary = sqrt(CentroidDist) / 2 - sqrt(NNClusterDist) * CosVecNNTarget;
@@ -1384,7 +1361,8 @@ void BuildNeighborList(
                     // cos(A) = (a^2 + c^2 - b^2) / (2 * a * c)
                     float DistCenNNCen = faiss::fvec_L2sqr(BoundaryConflictCentroidMap[std::make_pair(TargetClusterID, NNClusterID)].data(), CenGraph->getDataByInternalId(NNClusterID), Dimension);
                     float DistCenTarCen = faiss::fvec_L2sqr(BoundaryConflictCentroidMap[std::make_pair(TargetClusterID, NNClusterID)].data(), CenGraph->getDataByInternalId(TargetClusterID), Dimension);
-                    float DistTarCenNNCen = GetCentroidDist(TargetClusterID, NNClusterID, ClusterDistNum, CentroidsDists, CentroidsIds, CenGraph);
+
+                    float DistTarCenNNCen = faiss::fvec_L2sqr(CenGraph->getDataByInternalId(NNClusterID), CenGraph->getDataByInternalId(TargetClusterID), Dimension);
 
                     float CosNLNNTarget = (DistCenNNCen + DistTarCenNNCen - DistCenTarCen) / (2 * sqrt(DistCenNNCen * DistTarCenNNCen));
                     float Alpha = sqrt(DistCenNNCen) * CosNLNNTarget / sqrt(DistTarCenNNCen);
@@ -1524,7 +1502,7 @@ void BuildNeighborList(
             }
 
             uint32_t Indice = 0;
-            uint32_t PrintIndice = 0;
+            uint32_t PrintIndice = nc - 1;
             std::cout << "Print the vector ID and target cluster ID in cluster: " << PrintIndice << "\n";
             for (size_t i = 0; i < NeighborListVecID[PrintIndice].size() / 10; i++){
                 std::cout << NeighborListVecID[PrintIndice][i] << " ";
@@ -1554,17 +1532,28 @@ void BuildNeighborList(
             " The MinVecListSize: " << MinVecListSize << " The MinTarListSize: " << MinTarListSize << " The MinAlphaListSize: " << MinAlphaListSize;
 
             // Write the alpha list of all neighbor lists
+            std::vector<float> AlphaCentroidNorm;
+
             for (uint32_t i = 0; i < nc; i++){
                 size_t Compressedsize = 0;
+                
                 if (BoundaryConflictMap.find(i) != BoundaryConflictMap.end()){
                     for (auto it = BoundaryConflictMap[i].begin(); it != BoundaryConflictMap[i].end(); it++){
-                        NeighborListOutput.write((char *) & NeighborListAlpha[std::make_pair(i, it->first)], sizeof(float));
+                        float Alpha = NeighborListAlpha[std::make_pair(i, it->first)];
+                        NeighborListOutput.write((char *) & Alpha, sizeof(float));
+                        
+                        std::vector<float> AlphaCentroidTemp(Dimension, 0);
+                        faiss::fvec_madd(Dimension, AlphaCentroidTemp.data(), (1 - Alpha), CenGraph->getDataByInternalId(i), AlphaCentroidTemp.data());
+                        faiss::fvec_madd(Dimension, AlphaCentroidTemp.data(), Alpha, CenGraph->getDataByInternalId(it->first), AlphaCentroidTemp.data());
+                        AlphaCentroidNorm.emplace_back(faiss::fvec_norm_L2sqr(AlphaCentroidTemp.data(), Dimension));
                     }
                     Compressedsize = BoundaryConflictMap[i].size();
                 }
                 Compressedsizelist[i] = i == 0? Compressedsize : Compressedsizelist[i - 1] + Compressedsize;
             }
             assert(Compressedsizelist[nc - 1] == NumAlphaList);
+            assert(NumAlphaList == AlphaCentroidNorm.size());
+            NeighborListOutput.write((char *) AlphaCentroidNorm.data(), AlphaCentroidNorm.size() * sizeof(float));
             NeighborListOutput.write((char *) Compressedsizelist.data(), nc * sizeof(uint32_t));
 
 

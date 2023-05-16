@@ -62,19 +62,20 @@ size_t NeighborNum = 20;
 size_t Assign_num_batch = 20;
 size_t Graph_num_batch = 20;
 size_t Assign_batch_size = nb / Assign_num_batch;
-size_t ClusterDistNum = 1000; //Distance between vectors and centroids, used in search task
 std::string NNDatasetName = "Train"; // Choose one from "Train" or "Base"
 //std::string NNDatasetName = "Base";
 
 // File Path
 const std::string PathNLFolder = PathFolder + Dataset + "/" + "NLFiles/";
 std::string PathDatasetNN = PathNLFolder + NNDatasetName + "NN_" + std::to_string(nc) + "_" + std::to_string(SearchK);
-std::string PathCentroidDist = PathNLFolder + "CentroidNeighborDist_" + std::to_string(nc) + "_" + std::to_string(ClusterDistNum);
+std::string PathCentroidNLNorm = PathNLFolder + "CentroidNeighborNorm_" + std::to_string(nc);
 std::string PathBaseNeighborID = PathNLFolder + "BaseNeighborID_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
 std::string PathBaseNeighborDist = PathNLFolder + "BaseNeighborDist_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
+std::string PathBaseAssignComp = PathNLFolder + "BaseAssignmentComp_" + std::to_string(nc);
 std::string PathSubGraphFolder = PathNLFolder + "SubGraphIndexes/";
 std::string PathCenGraphInfo = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".info";
 std::string PathCenGraphEdge = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".edge";
+
 
 // Data Path 
 

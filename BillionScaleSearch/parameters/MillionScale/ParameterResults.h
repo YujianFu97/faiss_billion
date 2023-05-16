@@ -1,4 +1,4 @@
-#include "./GIST1M.h"
+#include "./SIFT1M.h"
 
 //For recording
 const bool SavingIndex = true;
@@ -20,11 +20,11 @@ std::string OPQState = UseOPQ ? "_OPQ_":"_";
 const size_t NumRecall = 2;
 size_t RecallK[NumRecall] = {1, 5};
 const size_t NumPara = 10;
-size_t MaxItem[NumPara] = {1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000};
-size_t EfSearch[NumPara] = {20, 20, 20, 20, 20, 20, 20, 20, 20, 20}; 
-size_t EfNList[NumPara] =  {10, 20, 50, 100, 120, 150, 200, 250, 300, 350};
+size_t MaxItem[NumPara] =           {10000, 1000, 5000, 8000, 10000, 15000, 20000, 25000, 30000, 35000};
+size_t EfSearch[NumPara] =          {100, 50, 50, 50, 50, 50, 50, 50, 50, 50}; 
+size_t EfNList[NumPara] =           {200, 50, 100, 500, 600, 1000, 1300, 1500, 2000, 2300};
 //This is the number of checked vectors but not update 
-size_t AccustopItem[NumPara] = {5000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000};
+//size_t MaxNoUpdate[NumPara] = {5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000};
 
 
 // For optkmeans
@@ -70,11 +70,13 @@ std::string NNDatasetName = "Base";
 // File Path
 const std::string PathNLFolder = PathFolder + Dataset + "/" + "NLFiles/";
 std::string PathDatasetNN = PathNLFolder + NNDatasetName + "NN_" + std::to_string(nc) + "_" + std::to_string(SearchK);
-std::string PathCentroidDist = PathNLFolder + "CentroidNeighborDist_" + std::to_string(nc) + "_" + std::to_string(ClusterDistNum);
+std::string PathCentroidNLNorm = PathNLFolder + "CentroidNeighborNorm_" + std::to_string(nc);
 std::string PathBaseNeighborID = PathNLFolder + "BaseNeighborID_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
 std::string PathBaseNeighborDist = PathNLFolder + "BaseNeighborDist_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
+std::string PathBaseAssignComp = PathNLFolder + "BaseAssignmentComp_" + std::to_string(nc);
 std::string PathSubGraphFolder = PathNLFolder + "SubGraphIndexes/";
-
+std::string PathCenGraphInfo = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".info";
+std::string PathCenGraphEdge = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".edge";
 
 
 // Data Path 
