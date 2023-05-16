@@ -168,7 +168,7 @@ int main(){
     bool NeighborTest = true;
     if (NeighborTest){
         std::cout << "Test the vector cost on neighboring partition\n";
-        size_t nq = 2000;
+        size_t nq = 1;
         std::vector<float> Query (nq * Dimension);
         std::vector<uint32_t> GT(nq * ngt);
         std::ifstream GTInput(PathGt, std::ios::binary);
@@ -192,7 +192,7 @@ int main(){
 
         for (size_t KInEval = 1; KInEval <= 10; KInEval++){
         
-        std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq); 
+        std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq, std::pair<uint32_t, uint32_t>{0, 0}); 
 
 
 //#pragma omp parallel for
@@ -231,6 +231,8 @@ int main(){
                 }
             }
             VectorCost[i].second = VisitedVec;
+
+            std::cout << VectorCost[i].first << " " << VectorCost[i].second << " " << BaseIds[QCID[0]].size() << " " << VisitedVec <<"\n";
         }
 
         float Ratio = 0;
