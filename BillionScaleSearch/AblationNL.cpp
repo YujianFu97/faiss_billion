@@ -168,6 +168,7 @@ int main(){
     bool NeighborTest = true;
     if (NeighborTest){
         std::cout << "Test the vector cost on neighboring partition\n";
+        size_t nq = 2000;
         std::vector<float> Query (nq * Dimension);
         std::vector<uint32_t> GT(nq * ngt);
         std::ifstream GTInput(PathGt, std::ios::binary);
@@ -176,7 +177,7 @@ int main(){
         readXvecFvec<DataType>(QueryInput, Query.data(), Dimension, nq, true, true);
         GTInput.close(); QueryInput.close();
         size_t Ef = 500;
-        nq = 2000;
+        
         std::vector<uint32_t> BaseAssignment(nb);
         std::vector<std::vector<uint32_t>> BaseIds(nc);
         std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
