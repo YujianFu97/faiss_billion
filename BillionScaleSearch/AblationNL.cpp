@@ -175,7 +175,7 @@ int main(){
         std::ifstream QueryInput(PathQuery, std::ios::binary);
         readXvecFvec<DataType>(QueryInput, Query.data(), Dimension, nq, true, true);
         GTInput.close(); QueryInput.close();
-        size_t Ef = 10000;
+        size_t Ef = 500;
         std::vector<uint32_t> BaseAssignment(nb);
         std::vector<std::vector<uint32_t>> BaseIds(nc);
         std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
