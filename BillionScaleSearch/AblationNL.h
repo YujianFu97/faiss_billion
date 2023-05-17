@@ -123,7 +123,7 @@ uint32_t SearchMultiFull(time_recorder & Trecorder, size_t nq, size_t RecallK, f
 hnswlib::HierarchicalNSW * CenGraph, float * QCDist, uint32_t * QCID, std::vector<std::vector<uint32_t>> & BaseCompIds, float * CentroidsNorm, uint32_t * BaseIdCompIndice,
 float * NeighborListAlpha, float * NeighborListAlphaNorm, uint32_t * NeighborListAlphaTar, uint32_t * NeighborListAlphaIndice, uint32_t * NeighborListAlphaCompIndice, uint32_t * NeighborListVec, uint32_t * NeighborListVecIndice,
 uint32_t * NeighborListNumTarIndice, uint32_t * NeighborListNumTar, uint32_t * NeighborListTarIDIndice, uint32_t * NeighborListTarID,
-int64_t * NL2SearchID, float * NL2SearchDist, DataType * BaseVectors, uint32_t * DeCompBaseIDs, uint32_t * DeCompAlphaTarID, uint32_t * DeCompVecID, uint32_t * DeCompNumTar, uint32_t * DeCompTarID, int64_t * ClusterIDSet, uint32_t * ClusterIDSetIndice,
+int64_t * NL2SearchID, float * NL2SearchDist, float * BaseVectors, uint32_t * DeCompBaseIDs, uint32_t * DeCompAlphaTarID, uint32_t * DeCompVecID, uint32_t * DeCompNumTar, uint32_t * DeCompTarID, int64_t * ClusterIDSet, uint32_t * ClusterIDSetIndice,
 FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecListSize, uint32_t MaxTarListSize
 ){
     size_t CompStartIndice, CompIndice, CompSize, CompSize1, CompSize2, CompSize3, StartIndice, EndIndice, SumVisitedItem = 0;

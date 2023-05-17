@@ -77,8 +77,8 @@ int main(){
     // Train the centroids for inverted index
     //PathCentroid = PathNLFolder + "Centroids_" + std::to_string(nc) + ".fvecs";
 
-    nc = 999973;
-    PathCentroid = PathFolder  + Dataset + "/" + "centroids_deep1b.fvecs";
+    nc = 993127;
+    PathCentroid = PathFolder  + Dataset + "/" + "centroids_sift1b.fvecs";
 
     std::vector<float> Centroids(nc * Dimension);
     if (!exists(PathCentroid)){
@@ -115,8 +115,8 @@ int main(){
 
     // Assign the base set, and optimize the assignment with minimizing the search cost:
     hnswlib::HierarchicalNSW * Cengraph;
-    PathCenGraphInfo = PathFolder  + Dataset + "/" + "deep1b.newinfo";
-    PathCenGraphEdge = PathFolder  + Dataset + "/" + "deep1b.newedge";
+    PathCenGraphInfo = PathFolder  + Dataset + "/" + "sift1b.newinfo";
+    PathCenGraphEdge = PathFolder  + Dataset + "/" + "sift1b.newedge";
     if (exists(PathCenGraphInfo) && exists(PathCenGraphEdge)){
         Cengraph = new hnswlib::HierarchicalNSW(PathCenGraphInfo, PathCentroid, PathCenGraphEdge);
     }
@@ -127,8 +127,6 @@ int main(){
         Cengraph->SaveInfo(PathCenGraphInfo);
     }
 
-
-
     std::string PathBaseIDSeq    = PathNLFolder + "BaseID_nc" + NCString + "_Seq";
 
 
@@ -136,7 +134,7 @@ int main(){
     std::cout << PathBaseNeighborID << "\n" << PathBaseNeighborDist << "\n" << PathBaseIDSeq << "\n";
     //exit(0);
 
-    if (!exists(PathBaseNeighborID) || !exists(PathBaseNeighborDist) || !exists(PathBaseIDSeq)){
+    if (true || !exists(PathBaseNeighborID) || !exists(PathBaseNeighborDist) || !exists(PathBaseIDSeq)){
         std::cout << "Assign the base vectors\n";
         std::ifstream BaseInput = std::ifstream(PathBase, std::ios::binary);
         std::ofstream BaseNeighborIDOutput(PathBaseNeighborID, std::ios::binary);
@@ -187,8 +185,8 @@ int main(){
         std::vector<uint32_t> BaseAssignment(nb);
         std::vector<std::vector<uint32_t>> BaseIds(nc);
 
-        PathBaseIDSeq = PathFolder  + Dataset + "/" + "precomputed_idxs_deep1b.ivecs";
-        PathBaseIDInv = PathFolder + Dataset + "/" + "precomputed_idxs_deep1b.inv";
+        PathBaseIDSeq = PathFolder  + Dataset + "/" + "precomputed_idxs_sift1b.ivecs";
+        PathBaseIDInv = PathFolder + Dataset + "/" + "precomputed_idxs_sift1b.inv";
 
         std::cout << "Loading the baseid structure \n";
         if (!exists(PathBaseIDInv)){
@@ -235,9 +233,9 @@ int main(){
         
         std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq, std::pair<uint32_t, uint32_t>{0, 0}); 
 
-        size_t Gt = 0;
+        //std::vector<uint32_t> GtNum(nq, 0);
 
-//#pragma omp parallel for
+#pragma omp parallel for
         for (size_t i = 0; i < nq; i++){
             //std::cout << "Processing " << i << " / " << nq << "\r";
             size_t VisitedGt = 0;
@@ -274,17 +272,22 @@ int main(){
                 if (VisitedGt == KInEval){
                     break;
                 }
-                Gt += VisitedGt;
-                break;
+
+                //GtNum[i] = VisitedGt;
+                //break;
             }
             VectorCost[i].second = VisitedVec;
 
             //std::cout << VectorCost[i].first << " " << VectorCost[i].second << " " << BaseIds[QCID[0]].size() << " " << VisitedVec <<"\n";
         }
-
-        std::cout << "Recall in central partition: " << float(Gt) / float(nq * KInEval) << " for K = " << KInEval << "\n";
+/*
+        float TotalGt = 0;
+        for (size_t i = 0; i < nq; i++){
+            TotalGt += GtNum[i];
+        }
+        std::cout << "Recall in central partition: " << float(TotalGt) / float(nq * KInEval) << " for K = " << KInEval << "\n";
         continue;
-
+*/
         float Ratio = 0;
         for (size_t i = 0; i < nq; i++){
             //std::cout << VectorCost[i].second << " " << VectorCost[i].first << " | ";
@@ -901,9 +904,9 @@ int main(){
     std::vector<float> TimeConsumption(NumPara);
     std::vector<float> RecallResult(NumPara);
     std::vector<float> Recall1Result(NumPara);
-    std::vector<DataType> BaseVectors(nb * Dimension);
+    std::vector<float> BaseVectors(nb * Dimension);
     std::ifstream BaseInput = std::ifstream(PathBase, std::ios::binary);
-    readXvec<DataType>(BaseInput, BaseVectors.data(), Dimension, nb, true, true);
+    readXvec<float>(BaseInput, BaseVectors.data(), Dimension, nb, true, true);
 
     for (size_t i = 0; i < NumRecall; i++){
 

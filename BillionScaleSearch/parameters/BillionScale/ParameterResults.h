@@ -1,4 +1,4 @@
-#include "DEEP1B.h"
+#include "SIFT1B.h"
 
 //For recording
 const bool SavingIndex = true;
@@ -80,20 +80,20 @@ std::string PathCenGraphEdge = PathNLFolder + "CenGraph_" + std::to_string(nc) +
 // Data Path 
 
 // For DEEP1B
-
+/*
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.fvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.fvecs";
-
+*/
 
 // For SIFT1B
-/*
+
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_learn.bvecs";
 const std::string PathBase =      PathFolder  + Dataset + "/" + Dataset +"_base.bvecs";
 const std::string PathGt =        PathFolder  + Dataset + "/" + Dataset +"_groundtruth.ivecs";
 const std::string PathQuery =     PathFolder  + Dataset + "/" + Dataset +"_query.bvecs";
-*/
+
 
 const std::string PathTrainGt =   PathFolder  + Dataset + "/" + Dataset +"_Train_groundtruth.ivecs";
 const std::string PathTrainDist = PathFolder  + Dataset + "/" + Dataset +"_Train_Dist.fvecs";
