@@ -173,7 +173,7 @@ int main(){
     bool NeighborTest = true;
     if (NeighborTest){
         std::cout << "Test the vector cost on neighboring partition\n";
-        size_t nq = 1;
+        size_t nq = 10;
         std::vector<float> Query (nq * Dimension);
         std::vector<uint32_t> GT(nq * ngt);
         std::ifstream GTInput(PathGt, std::ios::binary);
