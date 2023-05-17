@@ -78,7 +78,7 @@ int main(){
 
 
 
-            if (true){
+            if (false){
 
             PathBaseIDSeq = "/data/yujian/Dataset/SIFT1B/precomputed_idxs_sift1b.ivecs";
             PathBaseIDInv = "/data/yujian/Dataset/SIFT1B/precomputed_idxs_sift1b.inv";
