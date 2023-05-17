@@ -134,7 +134,8 @@ int main(){
     std::cout << PathBaseNeighborID << "\n" << PathBaseNeighborDist << "\n" << PathBaseIDSeq << "\n";
     //exit(0);
 
-    if (true || !exists(PathBaseNeighborID) || !exists(PathBaseNeighborDist) || !exists(PathBaseIDSeq)){
+/*
+    if (!exists(PathBaseNeighborID) || !exists(PathBaseNeighborDist) || !exists(PathBaseIDSeq)){
         std::cout << "Assign the base vectors\n";
         std::ifstream BaseInput = std::ifstream(PathBase, std::ios::binary);
         std::ofstream BaseNeighborIDOutput(PathBaseNeighborID, std::ios::binary);
@@ -167,7 +168,7 @@ int main(){
         BaseNeighborIDOutput.close();
         BaseNeighborDistOutput.close();
     }
-
+*/
     /*------------------------------------*/
     bool NeighborTest = true;
     if (NeighborTest){
