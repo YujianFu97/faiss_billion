@@ -187,15 +187,36 @@ int main(){
         std::vector<std::vector<uint32_t>> BaseIds(nc);
 
         PathBaseIDSeq = PathFolder  + Dataset + "/" + "precomputed_idxs_deep1b.ivecs";
-        std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
+        PathBaseIDInv = PathFolder + Dataset + "/" + "precomputed_idxs_deep1b.inv";
 
-        readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000, false, true);
-        std::cout << "Generate the baseid index\n";
+        if (exists(PathBaseIDInv)){
+            std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
+            readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000, false, true);
+            std::cout << "Generate the baseid index\n";
+            for (uint32_t i = 0; i < nb; i++){
+                //assert(BaseAssignment[i] < nc);
+                std::cout << i << " / " << nb << "\r";
+                BaseIds[BaseAssignment[i]].emplace_back(i);
+            }
 
-        for (uint32_t i = 0; i < nb; i++){
-            //assert(BaseAssignment[i] < nc);
-            std::cout << i << " / " << nb << "\r";
-            BaseIds[BaseAssignment[i]].emplace_back(i);
+            std::ofstream BaseIDInvOutput(PathBaseIDInv, std::ios::binary);
+
+            for (size_t i = 0; i < nc; i++){
+                uint32_t ClusterSize = BaseIds[i].size();
+                BaseIDInvOutput.write((char *) & ClusterSize, sizeof(uint32_t));
+                BaseIDInvOutput.write((char *) BaseIds[i].data(), sizeof(uint32_t) * ClusterSize);
+            }
+            BaseIDInvOutput.close();
+        }
+        else{
+            std::ifstream BaseIDInvInput(PathBaseIDInv, std::ios::binary);
+
+            uint32_t ClusterSize = 0;
+            for (size_t i = 0; i < nc; i++){
+                BaseIDInvInput.read((char *) & ClusterSize, sizeof(uint32_t));
+                BaseIds[i].resize(ClusterSize);
+                BaseIDInvInput.read((char *) BaseIds[i].data(), sizeof(uint32_t));
+            }
         }
 
         for (size_t i = 0; i < 1000; i++){
