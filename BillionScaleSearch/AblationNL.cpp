@@ -236,7 +236,7 @@ int main(){
 
 //#pragma omp parallel for
         for (size_t i = 0; i < nq; i++){
-            std::cout << "Processing " << i << " / " << nq << "\r";
+            //std::cout << "Processing " << i << " / " << nq << "\r";
             size_t VisitedGt = 0;
             size_t VisitedVec = 0;
 
@@ -255,10 +255,10 @@ int main(){
                 //std::cout << QCID[Ef - j - 1] << " ";
             }
 
-            std::cout << "Visiting the partitions\n";
+            //std::cout << "Visiting the partitions\n";
             VectorCost[i].first = BaseIds[QCID[0]].size();
             for (size_t j =0; j < Ef; j++){
-                std::cout << j << "/ " << Ef << "\r";
+                //std::cout << j << "/ " << Ef << "\r";
                 uint32_t ClusterID = QCID[j];
 
                 VisitedVec += BaseIds[ClusterID].size();
@@ -274,7 +274,7 @@ int main(){
             }
             VectorCost[i].second = VisitedVec;
 
-            std::cout << VectorCost[i].first << " " << VectorCost[i].second << " " << BaseIds[QCID[0]].size() << " " << VisitedVec <<"\n";
+            //std::cout << VectorCost[i].first << " " << VectorCost[i].second << " " << BaseIds[QCID[0]].size() << " " << VisitedVec <<"\n";
         }
 
         float Ratio = 0;
