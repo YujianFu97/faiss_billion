@@ -77,6 +77,7 @@ int main(){
     // Train the centroids for inverted index
     //PathCentroid = PathNLFolder + "Centroids_" + std::to_string(nc) + ".fvecs";
 
+    nc = 999973;
     PathCentroid = PathFolder  + Dataset + "/" + "centroids_deep1b.fvecs";
 
     std::vector<float> Centroids(nc * Dimension);
@@ -114,8 +115,8 @@ int main(){
 
     // Assign the base set, and optimize the assignment with minimizing the search cost:
     hnswlib::HierarchicalNSW * Cengraph;
-    PathCenGraphInfo = PathFolder  + Dataset + "/" + "deep1b.info";
-    PathCenGraphEdge = PathFolder  + Dataset + "/" + "deep1b.edge";
+    PathCenGraphInfo = PathFolder  + Dataset + "/" + "deep1b.newinfo";
+    PathCenGraphEdge = PathFolder  + Dataset + "/" + "deep1b.newedge";
     if (exists(PathCenGraphInfo) && exists(PathCenGraphEdge)){
         Cengraph = new hnswlib::HierarchicalNSW(PathCenGraphInfo, PathCentroid, PathCenGraphEdge);
     }
