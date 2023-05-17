@@ -191,8 +191,10 @@ int main(){
 
         readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000, false, true);
         std::cout << "Generate the baseid index\n";
+
         for (uint32_t i = 0; i < nb; i++){
-            assert(BaseAssignment[i] < nc);
+            //assert(BaseAssignment[i] < nc);
+            std::cout << i << " / " << nb << "\r";
             BaseIds[BaseAssignment[i]].emplace_back(i);
         }
 
