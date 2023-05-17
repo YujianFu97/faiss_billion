@@ -189,7 +189,7 @@ int main(){
         PathBaseIDSeq = PathFolder  + Dataset + "/" + "precomputed_idxs_deep1b.ivecs";
         PathBaseIDInv = PathFolder + Dataset + "/" + "precomputed_idxs_deep1b.inv";
 
-        if (exists(PathBaseIDInv)){
+        if (!exists(PathBaseIDInv)){
             std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
             readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000, false, true);
             std::cout << "Generate the baseid index\n";
