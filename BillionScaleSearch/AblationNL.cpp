@@ -123,7 +123,6 @@ int main(){
             }
             BaseIDInvOutput.close();
 }
-        exit(0);
 
 
 
