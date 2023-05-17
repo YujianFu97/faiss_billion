@@ -75,7 +75,10 @@ int main(){
 
     /*-----------------------------------------------------------------------------------------------------------------*/
     // Train the centroids for inverted index
-    PathCentroid = PathNLFolder + "Centroids_" + std::to_string(nc) + ".fvecs";
+    //PathCentroid = PathNLFolder + "Centroids_" + std::to_string(nc) + ".fvecs";
+
+    PathCentroid = PathFolder  + Dataset + "/" + "centroids_deep1b.fvecs";
+
     std::vector<float> Centroids(nc * Dimension);
     if (!exists(PathCentroid)){
         std::vector<float> TrainSet(nt * Dimension);
@@ -111,6 +114,8 @@ int main(){
 
     // Assign the base set, and optimize the assignment with minimizing the search cost:
     hnswlib::HierarchicalNSW * Cengraph;
+    PathCenGraphInfo = PathFolder  + Dataset + "/" + "deep1b.info";
+    PathCenGraphEdge = PathFolder  + Dataset + "/" + "deep1b.edge";
     if (exists(PathCenGraphInfo) && exists(PathCenGraphEdge)){
         Cengraph = new hnswlib::HierarchicalNSW(PathCenGraphInfo, PathCentroid, PathCenGraphEdge);
     }
@@ -180,8 +185,12 @@ int main(){
         
         std::vector<uint32_t> BaseAssignment(nb);
         std::vector<std::vector<uint32_t>> BaseIds(nc);
+
+        
+        PathBaseIDSeq = PathFolder  + Dataset + "/" + "precomputed_idxs_deep1b.ivecs";
         std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
-        BaseIDInput.read((char *) BaseAssignment.data(), nb * sizeof(uint32_t));
+
+        readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000);
         for (uint32_t i = 0; i < nb; i++){
             assert(BaseAssignment[i] < nc);
             BaseIds[BaseAssignment[i]].emplace_back(i);
