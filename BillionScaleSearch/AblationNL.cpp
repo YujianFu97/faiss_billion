@@ -227,7 +227,6 @@ int main(){
             std::cout << BaseIds[nc - 1 - i].size() << " ";
         }
         std::cout << "\n";
-        exit(0);
 
         std::cout << "Start the evaluation\n";
         TRecorder.reset();
