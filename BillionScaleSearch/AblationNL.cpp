@@ -181,8 +181,8 @@ int main(){
         std::ifstream QueryInput(PathQuery, std::ios::binary);
         readXvecFvec<DataType>(QueryInput, Query.data(), Dimension, nq, true, true);
         GTInput.close(); QueryInput.close();
-        size_t Ef = 500;
-        
+        size_t Ef = 5000;
+
         std::vector<uint32_t> BaseAssignment(nb);
         std::vector<std::vector<uint32_t>> BaseIds(nc);
 
@@ -252,7 +252,7 @@ int main(){
                 QCID[Ef - j - 1] = result.top().second;
                 QCDist[Ef - j - 1] = result.top().first;
                 result.pop();
-                std::cout << QCID[Ef - j - 1] << " ";
+                //std::cout << QCID[Ef - j - 1] << " ";
             }
 
             std::cout << "Visiting the partitions\n";
