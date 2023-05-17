@@ -262,7 +262,7 @@ int main(){
                 uint32_t ClusterID = QCID[j];
 
                 VisitedVec += BaseIds[ClusterID].size();
-                for (size_t k = 0; k < BaseIds[ClusterID].size(); j++){
+                for (size_t k = 0; k < BaseIds[ClusterID].size(); k++){
                     if (QueryGT.find(BaseIds[ClusterID][k]) != QueryGT.end()){
                         VisitedGt ++;
                     }
