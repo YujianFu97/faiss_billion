@@ -252,6 +252,7 @@ int main(){
                 QCID[Ef - j - 1] = result.top().second;
                 QCDist[Ef - j - 1] = result.top().first;
                 result.pop();
+                std::cout << QCID[Ef - j - 1] << " ";
             }
 
             VectorCost[i].first = BaseIds[QCID[0]].size();
