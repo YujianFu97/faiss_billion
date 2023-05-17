@@ -255,8 +255,10 @@ int main(){
                 std::cout << QCID[Ef - j - 1] << " ";
             }
 
+            std::cout << "Visiting the partitions\n";
             VectorCost[i].first = BaseIds[QCID[0]].size();
             for (size_t j =0; j < Ef; j++){
+                std::cout << j << "/ " << Ef << "\r";
                 uint32_t ClusterID = QCID[j];
 
                 VisitedVec += BaseIds[ClusterID].size();
