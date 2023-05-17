@@ -194,10 +194,22 @@ int main(){
             std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
             readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000, false, true);
             std::cout << "Generate the baseid index\n";
+            std::vector<uint32_t> ClusterSize(nc, 0);
+            std::vector<uint32_t> VectorIndice(nb, 0);
+            for (size_t i = 0; i < nb; i++){
+                std::cout << i << " / " << nb << "\r";
+                VectorIndice[i] = ClusterSize[BaseAssignment[i]];
+                ClusterSize[i] ++;
+            }
+
+            for (size_t i = 0; i < nc; i++){
+                BaseIds[i].resize(ClusterSize[i]);
+            }
+
             for (uint32_t i = 0; i < nb; i++){
                 //assert(BaseAssignment[i] < nc);
                 std::cout << i << " / " << nb << "\r";
-                BaseIds[BaseAssignment[i]].emplace_back(i);
+                BaseIds[BaseAssignment[i]][VectorIndice[i]] = i;
             }
 
             std::ofstream BaseIDInvOutput(PathBaseIDInv, std::ios::binary);
