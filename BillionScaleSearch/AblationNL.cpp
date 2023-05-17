@@ -221,10 +221,12 @@ int main(){
             }
         }
 
+
         for (size_t i = 0; i < 100; i++){
-            std::cout << BaseIds[i].size() << " ";
+            std::cout << BaseIds[nc - 1 - i].size() << " ";
         }
         std::cout << "\n";
+        exit(0);
 
         std::cout << "Start the evaluation\n";
         TRecorder.reset();
