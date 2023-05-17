@@ -70,14 +70,68 @@ int main(){
         exit(0);
     }
 
+
     std::string PathNeighborList = PathNLFolder + "NeighborList_" + std::to_string(Datasetsize) + "_" + std::to_string(nc) + "_" + std::to_string(NLTargetK) + "_" + "_" + NNDatasetName + "_" + std::to_string(DistPrune) + "_" + std::to_string(UseQuantize);
     std::string PathNeighborListInfo = PathNeighborList + "_info";
+    
+    nc = 993127;
+
+
+
+            if (true){
+
+            PathBaseIDSeq = "/data/yujian/Dataset/SIFT1B/precomputed_idxs_sift1b.ivecs";
+            PathBaseIDInv = "/data/yujian/Dataset/SIFT1B/precomputed_idxs_sift1b.inv";
+
+            std::cout << "Loading the baseid structure \n";
+
+            std::vector<uint32_t> BaseAssignment(nb);
+            std::vector<std::vector<uint32_t>> BaseIds(nc);
+
+            std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
+            readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000, false, true);
+            std::cout << "Generate the baseid index\n";
+
+/*
+            std::vector<uint32_t> ClusterSize(nc, 0);
+            std::vector<uint32_t> VectorIndice(nb, 0);
+            for (size_t i = 0; i < nb; i++){
+                std::cout << i << " / " << nb << "\r";
+                VectorIndice[i] = ClusterSize[BaseAssignment[i]];
+                ClusterSize[i] ++;
+            }
+
+            for (size_t i = 0; i < nc; i++){
+                BaseIds[i].resize(ClusterSize[i]);
+            }
+*/
+            for (uint32_t i = 0; i < nb; i++){
+                assert(BaseAssignment[i] < nc);
+
+                if ((i % 100) == 0) std::cout << float(i) /  float(nb) << " Completed\r";
+
+                //BaseIds[BaseAssignment[i]][VectorIndice[i]] = i;
+                BaseIds[BaseAssignment[i]].emplace_back(i);
+            }
+
+            std::ofstream BaseIDInvOutput(PathBaseIDInv, std::ios::binary);
+
+            for (size_t i = 0; i < nc; i++){
+                uint32_t ClusterSize = BaseIds[i].size();
+                BaseIDInvOutput.write((char *) & ClusterSize, sizeof(uint32_t));
+                BaseIDInvOutput.write((char *) BaseIds[i].data(), sizeof(uint32_t) * ClusterSize);
+            }
+            BaseIDInvOutput.close();
+}
+        exit(0);
+
+
 
     /*-----------------------------------------------------------------------------------------------------------------*/
     // Train the centroids for inverted index
     //PathCentroid = PathNLFolder + "Centroids_" + std::to_string(nc) + ".fvecs";
 
-    nc = 993127;
+
     PathCentroid = PathFolder  + Dataset + "/" + "centroids_sift1b.fvecs";
 
     std::vector<float> Centroids(nc * Dimension);
@@ -191,9 +245,11 @@ int main(){
 
         std::cout << "Loading the baseid structure \n";
         if (!exists(PathBaseIDInv)){
+
             std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
             readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000, false, true);
             std::cout << "Generate the baseid index\n";
+
             std::vector<uint32_t> ClusterSize(nc, 0);
             std::vector<uint32_t> VectorIndice(nb, 0);
             for (size_t i = 0; i < nb; i++){
