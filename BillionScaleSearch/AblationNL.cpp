@@ -173,7 +173,7 @@ int main(){
     bool NeighborTest = true;
     if (NeighborTest){
         std::cout << "Test the vector cost on neighboring partition\n";
-        size_t nq = 10;
+        //size_t nq = 10;
         std::vector<float> Query (nq * Dimension);
         std::vector<uint32_t> GT(nq * ngt);
         std::ifstream GTInput(PathGt, std::ios::binary);
@@ -181,7 +181,7 @@ int main(){
         std::ifstream QueryInput(PathQuery, std::ios::binary);
         readXvecFvec<DataType>(QueryInput, Query.data(), Dimension, nq, true, true);
         GTInput.close(); QueryInput.close();
-        size_t Ef = 5000;
+        size_t Ef = 10000;
 
         std::vector<uint32_t> BaseAssignment(nb);
         std::vector<std::vector<uint32_t>> BaseIds(nc);
@@ -234,7 +234,7 @@ int main(){
         std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq, std::pair<uint32_t, uint32_t>{0, 0}); 
 
 
-//#pragma omp parallel for
+#pragma omp parallel for
         for (size_t i = 0; i < nq; i++){
             //std::cout << "Processing " << i << " / " << nq << "\r";
             size_t VisitedGt = 0;
@@ -279,7 +279,7 @@ int main(){
 
         float Ratio = 0;
         for (size_t i = 0; i < nq; i++){
-            std::cout << VectorCost[i].second << " " << VectorCost[i].first << " | ";
+            //std::cout << VectorCost[i].second << " " << VectorCost[i].first << " | ";
             Ratio += float(VectorCost[i].second - VectorCost[i].first) / VectorCost[i].second;
         }
         std::cout << "The ratio for K = " << KInEval << " is: " << Ratio / nq << "\n";

@@ -21,14 +21,14 @@ def fetchsearchcost(TargetK, assignment, trainindices, NeighborNum, clusterindic
     return trainset
 
 
-nb = 100
-nt = 100
+nb = 400
+nt = 400
 D = 2
 nc = 8
 TargetK = 15
 NeighborNum = 5
 
-np.random.seed(1)
+np.random.seed(10)
 base = random.rand(nb, D)
 
 
