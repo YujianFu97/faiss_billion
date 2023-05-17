@@ -186,11 +186,10 @@ int main(){
         std::vector<uint32_t> BaseAssignment(nb);
         std::vector<std::vector<uint32_t>> BaseIds(nc);
 
-        
         PathBaseIDSeq = PathFolder  + Dataset + "/" + "precomputed_idxs_deep1b.ivecs";
         std::ifstream BaseIDInput(PathBaseIDSeq, std::ios::binary);
 
-        readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000);
+        readXvec<uint32_t>(BaseIDInput, BaseAssignment.data(), 1000000, nb / 1000000, true, true);
         for (uint32_t i = 0; i < nb; i++){
             assert(BaseAssignment[i] < nc);
             BaseIds[BaseAssignment[i]].emplace_back(i);
