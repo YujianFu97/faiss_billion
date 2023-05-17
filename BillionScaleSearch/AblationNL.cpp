@@ -235,8 +235,9 @@ int main(){
         
         std::vector<std::pair<uint32_t, uint32_t>> VectorCost(nq, std::pair<uint32_t, uint32_t>{0, 0}); 
 
+        size_t Gt = 0;
 
-#pragma omp parallel for
+//#pragma omp parallel for
         for (size_t i = 0; i < nq; i++){
             //std::cout << "Processing " << i << " / " << nq << "\r";
             size_t VisitedGt = 0;
@@ -273,11 +274,16 @@ int main(){
                 if (VisitedGt == KInEval){
                     break;
                 }
+                Gt += VisitedGt;
+                break;
             }
             VectorCost[i].second = VisitedVec;
 
             //std::cout << VectorCost[i].first << " " << VectorCost[i].second << " " << BaseIds[QCID[0]].size() << " " << VisitedVec <<"\n";
         }
+
+        std::cout << "Recall in central partition: " << float(Gt) / float(nq * KInEval) << " for K = " << KInEval << "\n";
+        continue;
 
         float Ratio = 0;
         for (size_t i = 0; i < nq; i++){
