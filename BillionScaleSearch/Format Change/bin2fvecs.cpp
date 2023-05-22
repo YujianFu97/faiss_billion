@@ -29,9 +29,13 @@ int main(){
     }
     assert(n_points == nb && n_dim == Dimension);
 
+    std::vector<DataType> OriginDataVector(Dimension);
     std::vector<float> DataVector(Dimension);
     for (size_t i = 0; i < nb; i++){
-        Input.read((char *) DataVector.data(), sizeof(DataType) * Dimension);
+        Input.read((char *) OriginDataVector.data(), sizeof(DataType) * Dimension);
+        for (size_t j = 0; j < Dimension; j++){
+            DataVector[j] = OriginDataVector[j];
+        }
         Output.write((char *) & Dimension, sizeof(uint32_t));
         Output.write((char *) DataVector.data(), sizeof(float) * Dimension);
 
