@@ -281,7 +281,7 @@ int main(){
 
             uint32_t ClusterSize = 0;
             for (size_t i = 0; i < nc; i++){
-                std::cout << i << " / " << nc << "\r";
+                if ((i % 1000) == 0) std::cout << i << " / " << nc << "\r";
                 BaseIDInvInput.read((char *) & ClusterSize, sizeof(uint32_t));
                 BaseIds[i].resize(ClusterSize);
                 BaseIDInvInput.read((char *) BaseIds[i].data(), ClusterSize * sizeof(uint32_t));

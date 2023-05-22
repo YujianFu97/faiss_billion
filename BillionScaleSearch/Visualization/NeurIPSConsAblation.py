@@ -19,6 +19,9 @@ axisweight = 800
 legendfont = 16
 legendweight = 800
 
+colorlist = ['brown', 'orange', 'limegreen','purple']
+histocolorlist = ['peachpuff', 'lightyellow', 'paleturquoise', 'thistle']
+
 # Construction Time
 
 Base = np.array([78, 71, 73, 73])
@@ -35,15 +38,18 @@ plt.figure()
 plt.rcParams["font.weight"] = "bold"
 plt.rcParams["axes.labelweight"] = "bold"
 plt.tick_params(labelsize=15)
-plt.bar(x + width,NeST * Base, width = width, color = "w", edgecolor = "k", label = 'NeST', hatch = "XXX")
+
+plt.bar(x + width, Faiss * Base, width = width, color = histocolorlist[3], edgecolor = "k", label = 'Faiss', hatch = "***")
 
 
-plt.bar(x+ 2* width, IVFADCGP * Base, width = width, color = "w", edgecolor = "k", label = 'IVFADCGP')
+plt.bar(x+ 2* width, IVFADCGP * Base, width = width, color = histocolorlist[1], edgecolor = "k", label = 'IVFADCGP')
 
 
-plt.bar(x + 3 * width, FaissPLE * Base, width = width, color = "w", edgecolor = "k", label = 'FaissPLE', hatch = "///")
+plt.bar(x + 3 * width, FaissPLE * Base, width = width, color = histocolorlist[2], edgecolor = "k", label = 'FaissPLE', hatch = "///")
 
-plt.bar(x + 4 * width, Faiss * Base, width = width, color = "w", edgecolor = "k", label = 'Faiss', hatch = "***")
+
+plt.bar(x + 4 * width,NeST * Base, width = width, color = histocolorlist[0], edgecolor = "k", label = 'NeST', hatch = "XXX")
+
 
 plt.xticks(x+width*2, name_list)
 plt.ylabel("Construction Time / hours", fontsize = 18)
@@ -74,10 +80,10 @@ NeST_Recall1_15 =  np.array([0.28, 0.51, 0.63, 0.78, 0.83, 0.89, 0.93, 0.95, 0.9
 NeST_T_20 =        np.array([3.07, 3.5,  3.89,  4.9, 6, 6.9,  7.86, 9.14])
 NeST_Recall1_20 =  np.array([0.30, 0.52, 0.63,  0.80, 0.88, 0.92, 0.95, 0.98])
 
-plt.plot(NeST_T_5, NeST_Recall1_5, label = '$K$ = 5',color= "black", marker = 'o', linestyle = (0, (5, 10)))
-plt.plot(NeST_T_10, NeST_Recall1_10, label = '$K$ = 10',color= "black", marker = 'v', linestyle = "dashed")
-plt.plot(NeST_T_15, NeST_Recall1_15, label = '$K$ = 15',color= "black", marker = '.', linestyle = "dotted")
-plt.plot(NeST_T_20, NeST_Recall1_20, label = '$K$ = 20',color= "black", marker = '*', linestyle = "dashdot")
+plt.plot(NeST_T_5, NeST_Recall1_5, label = '$K$ = 5',color= colorlist[0], marker = 'o', linestyle = (0, (5, 10)))
+plt.plot(NeST_T_10, NeST_Recall1_10, label = '$K$ = 10',color= colorlist[1], marker = 'v', linestyle = "dashed")
+plt.plot(NeST_T_15, NeST_Recall1_15, label = '$K$ = 15',color= colorlist[2], marker = '.', linestyle = "dotted")
+plt.plot(NeST_T_20, NeST_Recall1_20, label = '$K$ = 20',color= colorlist[3], marker = '*', linestyle = "dashdot")
 
 plt.xlabel('Latency / ms', fontsize = axisfont, fontweight = axisweight)
 plt.ylabel('Recall1@1', fontsize = axisfont, fontweight = axisweight)

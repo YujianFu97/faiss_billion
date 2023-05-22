@@ -4,25 +4,26 @@
 #include<assert.h>
 #include<vector>
 
-typedef float DataType;
+typedef uint8_t DataType;
 
 
 int main(){
 
-    std::string InputPath = "/data/yujian/Dataset/Turing1B/base1b.fbin";
-    std::string OutputPath = "/data/yujian/Dataset/Turing1B/Turing_base.fvecs";
+    std::string InputPath = "/data/yujian/Dataset/SIFT100M/SIFT100M.ubin";
+    std::string OutputPath = "/data/yujian/Dataset/SIFT100M/SIFT100M.fvecs";
 
     std::ifstream Input(InputPath, std::ios::binary);
     std::ofstream Output(OutputPath, std::ios::binary);
 
-    size_t nb = 1e9;
-    uint32_t Dimension = 100;
+    size_t nb = 1e8;
+    uint32_t Dimension = 128;
 
-    uint32_t Dim = 100;
     uint32_t n_points = 0;
     uint32_t n_dim = 0;
+
     Input.read((char *) & n_points, sizeof(uint32_t));
     Input.read((char *) & n_dim, sizeof(uint32_t));
+
     assert(n_points == nb && n_dim == Dimension);
 
     std::vector<float> DataVector(Dimension);

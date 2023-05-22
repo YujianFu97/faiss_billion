@@ -28,6 +28,8 @@ xend = 16
 ystart = 0.0
 yend = 1.0
 
+colorlist = ['brown', 'orange', 'limegreen','purple']
+
 plt.rcParams["font.weight"] = "bold"
 plt.rcParams["axes.labelweight"] = "bold"
 # Data for latency and recall experiment
@@ -52,10 +54,10 @@ IVFADCGP_Recall1 =  np.array([0.1, 0.2, 0.3, 0.4,  0.5,  0.6,  0.7,  0.8,  0.9, 
 
 
 ''''''
-axes[0].plot(np.log2(NeST_L), NeST_Recall1, label = "NeST", color= "black", marker = 'o', linestyle = "solid")
-axes[0].plot(np.log2(IVFADCGP_L), IVFADCGP_Recall1, label = "IVFADCGP", color = 'black', marker = '*', linestyle = "dashed")
-axes[0].plot(np.log2(FaissPLE_L), FaissPLE_Recall1, label = "FaissPLE", color = 'black', marker = '.', linestyle = 'dashdot')
-axes[0].plot(np.log2(Faiss_L), Faiss_Recall1, label = 'Faiss', color = 'black', marker = 'v', linestyle = 'dotted')
+axes[0].plot(np.log2(NeST_L), NeST_Recall1, label = "NeST", color= colorlist[0], marker = 'o', linestyle = "solid")
+axes[0].plot(np.log2(IVFADCGP_L), IVFADCGP_Recall1, label = "IVFADCGP", color = colorlist[1], marker = '*', linestyle = "dashed")
+axes[0].plot(np.log2(FaissPLE_L), FaissPLE_Recall1, label = "FaissPLE", color = colorlist[2], marker = '.', linestyle = 'dashdot')
+axes[0].plot(np.log2(Faiss_L), Faiss_Recall1, label = 'Faiss', color = colorlist[3], marker = 'v', linestyle = 'dotted')
 
 plt.xlabel('Log$_2$R', fontsize = axisfont, fontweight = axisweight)
 plt.ylabel('Recall1@R', fontsize = axisfont, fontweight = axisweight)
@@ -90,10 +92,10 @@ IVFADCGP_Recall1 =  np.array([0.1, 0.2, 0.3, 0.4, 0.5,  0.6,  0.7,  0.8,  0.9,  
 plt.subplot(1, 4, 2)
 
 ''''''
-axes[1].plot(np.log2(NeST_L), NeST_Recall1, label = "NeST", color= "black", marker = 'o', linestyle = "solid")
-axes[1].plot(np.log2(IVFADCGP_L), IVFADCGP_Recall1, label = "IVFADCGP", color = 'black', marker = '*', linestyle = "dashed")
-axes[1].plot(np.log2(FaissPLE_L), FaissPLE_Recall1, label = "FaissPLE", color = 'black', marker = '.', linestyle = 'dashdot')
-axes[1].plot(np.log2(Faiss_L), Faiss_Recall1, label = 'Faiss', color = 'black', marker = 'v', linestyle = 'dotted')
+axes[1].plot(np.log2(NeST_L), NeST_Recall1, label = "NeST", color= colorlist[0], marker = 'o', linestyle = "solid")
+axes[1].plot(np.log2(IVFADCGP_L), IVFADCGP_Recall1, label = "IVFADCGP", color = colorlist[1], marker = '*', linestyle = "dashed")
+axes[1].plot(np.log2(FaissPLE_L), FaissPLE_Recall1, label = "FaissPLE", color = colorlist[2], marker = '.', linestyle = 'dashdot')
+axes[1].plot(np.log2(Faiss_L), Faiss_Recall1, label = 'Faiss', color = colorlist[3], marker = 'v', linestyle = 'dotted')
 
 plt.xlabel('Log$_2$R', fontsize = axisfont, fontweight = axisweight)
 plt.ylabel('Recall1@R', fontsize = axisfont, fontweight = axisweight)
@@ -126,10 +128,10 @@ IVFADCGP_Recall1 =  np.array([0.1, 0.2, 0.3, 0.4, 0.5,  0.6,  0.7,  0.8,  0.9,  
 plt.subplot(1, 4, 3)
 
 ''''''
-axes[2].plot(np.log2(NeST_L), NeST_Recall1, label = "NeST", color= "black", marker = 'o', linestyle = "solid")
-axes[2].plot(np.log2(IVFADCGP_L), IVFADCGP_Recall1, label = "IVFADCGP", color = 'black', marker = '*', linestyle = "dashed")
-axes[2].plot(np.log2(FaissPLE_L), FaissPLE_Recall1, label = "FaissPLE", color = 'black', marker = '.', linestyle = 'dashdot')
-axes[2].plot(np.log2(Faiss_L), Faiss_Recall1, label = 'Faiss', color = 'black', marker = 'v', linestyle = 'dotted')
+axes[2].plot(np.log2(NeST_L), NeST_Recall1, label = "NeST", color= colorlist[0], marker = 'o', linestyle = "solid")
+axes[2].plot(np.log2(IVFADCGP_L), IVFADCGP_Recall1, label = "IVFADCGP", color = colorlist[1], marker = '*', linestyle = "dashed")
+axes[2].plot(np.log2(FaissPLE_L), FaissPLE_Recall1, label = "FaissPLE", color = colorlist[2], marker = '.', linestyle = 'dashdot')
+axes[2].plot(np.log2(Faiss_L), Faiss_Recall1, label = 'Faiss', color = colorlist[3], marker = 'v', linestyle = 'dotted')
 
 
 plt.xlabel('Log$_2$R', fontsize = axisfont, fontweight = axisweight)
@@ -162,10 +164,10 @@ IVFADCGP_Recall1 =  np.array([0.1, 0.2, 0.3, 0.4, 0.5,  0.6,  0.7,  0.8,  0.9,  
 plt.subplot(1, 4, 4)
 
 ''''''
-axes[3].plot(np.log2(NeST_L), NeST_Recall1, label = "NeST", color= "black", marker = 'o', linestyle = "solid")
-axes[3].plot(np.log2(IVFADCGP_L), IVFADCGP_Recall1, label = "IVFADCGP", color = 'black', marker = '*', linestyle = "dashed")
-axes[3].plot(np.log2(FaissPLE_L), FaissPLE_Recall1, label = "FaissPLE", color = 'black', marker = '.', linestyle = 'dashdot')
-axes[3].plot(np.log2(Faiss_L), Faiss_Recall1, label = 'Faiss', color = 'black', marker = 'v', linestyle = 'dotted')
+axes[3].plot(np.log2(NeST_L), NeST_Recall1, label = "NeST", color= colorlist[0], marker = 'o', linestyle = "solid")
+axes[3].plot(np.log2(IVFADCGP_L), IVFADCGP_Recall1, label = "IVFADCGP", color = colorlist[1], marker = '*', linestyle = "dashed")
+axes[3].plot(np.log2(FaissPLE_L), FaissPLE_Recall1, label = "FaissPLE", color = colorlist[2], marker = '.', linestyle = 'dashdot')
+axes[3].plot(np.log2(Faiss_L), Faiss_Recall1, label = 'Faiss', color = colorlist[3], marker = 'v', linestyle = 'dotted')
 
 
 plt.xlabel('Log$_2$R', fontsize = axisfont, fontweight = axisweight)
