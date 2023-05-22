@@ -4,20 +4,20 @@
 #include<assert.h>
 #include<vector>
 
-typedef float DataType;
+typedef int8_t DataType;
 
 
 int main(){
 
-    std::string InputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M.i8bin";
+    std::string InputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M.u8bin";
     std::string OutputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M.fvecs";
-
-    uint32_t Dimension = 100;
 
     std::ifstream Input(InputPath, std::ios::binary);
     std::ofstream Output(OutputPath, std::ios::binary);
 
     size_t nb = 1e8;
+    uint32_t Dimension = 100;
+
     uint32_t n_points = 0;
     uint32_t n_dim = 0;
 
