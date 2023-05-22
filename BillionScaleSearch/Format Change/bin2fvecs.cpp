@@ -9,7 +9,7 @@ typedef uint8_t DataType;
 
 int main(){
 
-    std::string InputPath = "/data/yujian/Dataset/SIFT100M/SIFT100M_query.i8bin";
+    std::string InputPath = "/data/yujian/Dataset/SIFT100M/SIFT100M_query.u8bin";
     std::string OutputPath = "/data/yujian/Dataset/SIFT100M/SIFT100M_query.fvecs";
 
     size_t nb = 10000;
