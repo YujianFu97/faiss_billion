@@ -9,7 +9,7 @@ typedef int8_t DataType;
 
 int main(){
 
-    std::string InputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M.u8bin";
+    std::string InputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M.i8bin";
     std::string OutputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M.fvecs";
 
     std::ifstream Input(InputPath, std::ios::binary);
