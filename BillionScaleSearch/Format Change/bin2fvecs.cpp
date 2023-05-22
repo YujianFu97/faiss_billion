@@ -4,7 +4,7 @@
 #include<assert.h>
 #include<vector>
 
-typedef uint8_t DataType;
+typedef float DataType;
 
 
 int main(){
