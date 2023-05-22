@@ -24,6 +24,9 @@ int main(){
     Input.read((char *) & n_points, sizeof(uint32_t));
     Input.read((char *) & n_dim, sizeof(uint32_t));
 
+    if (n_dim != Dimension){
+        std::cout << "The loaded dimension: " << n_dim << " The loaded number of points: " << n_points << "\n";
+    }
     assert(n_points == nb && n_dim == Dimension);
 
     std::vector<float> DataVector(Dimension);
