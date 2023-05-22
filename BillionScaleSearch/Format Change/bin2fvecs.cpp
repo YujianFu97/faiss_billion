@@ -4,16 +4,16 @@
 #include<assert.h>
 #include<vector>
 
-typedef uint8_t DataType;
+typedef int8_t DataType;
 
 
 int main(){
 
-    std::string InputPath = "/data/yujian/Dataset/SIFT100M/SIFT100M_query.u8bin";
-    std::string OutputPath = "/data/yujian/Dataset/SIFT100M/SIFT100M_query.fvecs";
+    std::string InputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M_query.i8bin";
+    std::string OutputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M_query.fvecs";
 
-    size_t nb = 10000;
-    uint32_t Dimension = 128;
+    size_t nb = 29300;
+    uint32_t Dimension = 100;
 
     std::ifstream Input(InputPath, std::ios::binary);
     std::ofstream Output(OutputPath, std::ios::binary);
