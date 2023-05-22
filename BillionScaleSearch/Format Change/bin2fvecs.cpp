@@ -12,7 +12,7 @@ int main(){
     std::string InputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M_query.i8bin";
     std::string OutputPath = "/data/yujian/Dataset/SpaceV100M/SpaceV100M_query.fvecs";
 
-    size_t nb = 29300;
+    size_t nb = 29316;
     uint32_t Dimension = 100;
 
     std::ifstream Input(InputPath, std::ios::binary);
