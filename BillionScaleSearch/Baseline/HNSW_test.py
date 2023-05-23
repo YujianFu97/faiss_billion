@@ -50,9 +50,7 @@ print(gt_path)
 assert(os.path.exists(gt_path))
 gt, dist = gtbin_read(gt_path)
 print(gt)
-print(gt.size())
 print(dist)
-print(dist.size())
 exit(0)
 if (os.path.exists(index_path)):
     # Declaring index
