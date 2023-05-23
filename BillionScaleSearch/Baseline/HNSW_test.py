@@ -38,7 +38,7 @@ num_elements = 100000000
 
 M = 16
 ef_construction = 200
-ef_search = 100
+ef_search_ini = 100
 K = 1
 ef_search_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150,160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300]
 
@@ -74,12 +74,12 @@ def BuildIndex():
 
         # Controlling the recall by setting ef:
         # higher ef leads to better accuracy, but slower search
-        HNSW.set_ef(ef_search)
+        HNSW.set_ef(ef_search_ini)
 
         # Set number of threads used during batch search/construction
         # By default using all available cores
         start_time = time.time()
-        print("Adding %d elements from the database set" % (len(dataset)))
+        print("Adding ", (len(dataset)), " elements from the database set with ef_Cons = ", ef_construction, " M = ", M)
         HNSW.set_num_threads(64)
         HNSW.add_items(dataset)
         end_time = time.time()
