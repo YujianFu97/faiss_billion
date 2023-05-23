@@ -31,7 +31,7 @@ def gtbin_read(fname):
 """
 Example of index building, search and serialization/deserialization
 """
-data = "SIFT"
+data = "SpaceV"
 data_size = "100M"
 dim = 128
 num_elements = 100000000
