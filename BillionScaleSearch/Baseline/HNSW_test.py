@@ -39,12 +39,12 @@ ef_search = 10
 K = 1
 data = "SIFT"
 data_size = "100M"
-dataset_path = "/data/yujian/Dataset/"
+data_path = "/data/yujian/Dataset/"
 
-dataset_path = dataset_path + data + "/" + data + data_size + "/" + data + data_size + "_base.fvecs"
-index_path = dataset_path + data + "/" + data + data_size + "/" + data + data_size + "_HNSW_efcon_"+str(ef_construction)+"_M_"+str(M)+".bin"
-queryset_path = dataset_path + data + "/" + data + data_size + "/" + data + data_size + "_query.fvecs"
-gt_path= dataset_path + data + "/" + data + data_size + "/" + data + data_size + "_GT_100"
+dataset_path = data_path + data + "/" + data + data_size + "/" + data + data_size + "_base.fvecs"
+index_path = data_path + data + "/" + data + data_size + "/" + data + data_size + "_HNSW_efcon_"+str(ef_construction)+"_M_"+str(M)+".bin"
+queryset_path = data_path + data + "/" + data + data_size + "/" + data + data_size + "_query.fvecs"
+gt_path= data_path + data + "/" + data + data_size + "/" + data + data_size + "_GT_100"
 
 print(gt_path)
 assert(os.path.exists(gt_path))
