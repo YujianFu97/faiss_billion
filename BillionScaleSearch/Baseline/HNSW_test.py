@@ -30,17 +30,17 @@ def gtbin_read(fname):
 """
 Example of index building, search and serialization/deserialization
 """
-
+data = "SIFT"
+data_size = "100M"
 dim = 128
 num_elements = 100000000
+
 M = 16
 ef_construction = 100
 ef_search = 10
 K = 1
-data = "SIFT"
-data_size = "100M"
-data_path = "/data/yujian/Dataset/"
 
+data_path = "/data/yujian/Dataset/"
 dataset_path = data_path + data + "/" + data + data_size + "/" + data + data_size + "_base.fvecs"
 index_path = data_path + data + "/" + data + data_size + "/" + data + data_size + "_HNSW_efcon_"+str(ef_construction)+"_M_"+str(M)+".bin"
 queryset_path = data_path + data + "/" + data + data_size + "/" + data + data_size + "_query.fvecs"
@@ -49,14 +49,13 @@ gt_path= data_path + data + "/" + data + data_size + "/" + data + data_size + "_
 print(gt_path)
 assert(os.path.exists(gt_path))
 gt, dist = gtbin_read(gt_path)
-print(gt)
-print(dist)
-exit(0)
+
 if (os.path.exists(index_path)):
     # Declaring index
     HNSW = hnswlib.Index(space='l2', dim=dim)  # possible options are l2, cosine or ip
 
     # Load the data for construction
+    assert(os.path.exists(dataset_path))
     dataset = fvecs_read(dataset_path)
 
     # Initing index
@@ -76,8 +75,12 @@ if (os.path.exists(index_path)):
 
     # Set number of threads used during batch search/construction
     # By default using all available cores
+    start_time = time.time()
     print("Adding %d elements from the database set" % (len(dataset)))
+    HNSW.set_num_threads(64)
     HNSW.add_items(dataset)
+    end_time = time.time()
+    print("The time construction of HNSW graph: ", end_time - start_time, "s")
     
     # Serializing and deleting the index:
     print("Saving index to '%s'" % index_path)
@@ -87,13 +90,24 @@ if (os.path.exists(index_path)):
 HNSW = hnswlib.Index(space='l2', dim=dim)  # the space can be changed - keeps the data, alters the distance function.
 # Load the constructed index
 print("\nLoading index from "+index_path)
-HNSW.load_index("first_half.bin", max_elements = num_elements)
+assert(os.path.exists(index_path))
+HNSW.load_index(index_path, max_elements = num_elements)
 
+assert(os.path.exists(queryset_path))
 queryset = fvecs_read(queryset_path)
 # Query the elements for themselves and measure recall:
 HNSW.set_num_threads(1)
 start = time.perf_counter()
 labels, distances = HNSW.knn_query(queryset, k=K)
+end = time.perf_counter()
+elapsed = end - start
+print("The time consumption for each query: ", elapsed / len(queryset), "ms")
+
+correct = 0
+for i in range(len(queryset)):
+    gt_set = set(gt[i][:K])
+    label_set = set(labels[i][:K])
+    correct += len(gt_set.intersection(label_set))
 
 
-print("Recall for query set: Number of quries:",   np.mean(labels.reshape(-1) == np.arange(len(queryset))), "\n")
+print("Recall for query set: Number of quries:", len(queryset), "Recall", K, "@", K, "=", correct / (len(queryset) * K) ,"\n")
