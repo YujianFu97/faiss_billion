@@ -40,6 +40,7 @@ M = 16
 ef_construction = 100
 ef_search = 100
 K = 1
+ef_search_list = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
 data_path = "/data/yujian/Dataset/"
 dataset_path = data_path + data + "/" + data + data_size + "/" + data + data_size + "_base.fvecs"
@@ -99,24 +100,25 @@ def BuildIndex():
     print("Loading the query vectors")
     queryset = fvecs_read(queryset_path)
     # Query the elements for themselves and measure recall:
-    print("Searching the query vectors")
     HNSW.set_num_threads(1)
-    HNSW.set_ef(ef_search)
-    start = time.perf_counter()
-    labels, distances = HNSW.knn_query(queryset, k=K)
-    end = time.perf_counter()
-    elapsed = end - start
-    print("The time consumption for each query: ", 1000 * elapsed / len(queryset), "ms")
 
-    correct = 0
-    for i in range(len(queryset)):
-        gt_set = set(gt[i][:K])
-        label_set = set(labels[i][:K])
-        correct += len(gt_set.intersection(label_set))
+    for ef_search in ef_search_list:
+        print("Searching the query vectors")
+        HNSW.set_ef(ef_search)
+        start = time.perf_counter()
+        labels, distances = HNSW.knn_query(queryset, k=K)
+        end = time.perf_counter()
+        elapsed = end - start
+        print("The time consumption for each query: ", 1000 * elapsed / len(queryset), "ms")
 
+        correct = 0
+        for i in range(len(queryset)):
+            gt_set = set(gt[i][:K])
+            label_set = set(labels[i][:K])
+            correct += len(gt_set.intersection(label_set))
 
-    print("Recall for query set: Number of quries:", len(queryset), "Recall", K, "@", K, "=", correct / (len(queryset) * K) ," efQuery = ", ef_search)
+        print("Recall for query set: Number of quries:", len(queryset), "Recall", K, "@", K, "=", correct / (len(queryset) * K) ," efQuery = ", ef_search)
 
 mem_usage = memory_usage(BuildIndex)
 #print('Memory usage (in chunks of .1 seconds): %s' % mem_usage)
-print('Maximum memory usage: %s' % max(mem_usage))
+print('Maximum memory usage: %s' % max(mem_usage), " KB ")
