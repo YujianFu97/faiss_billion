@@ -99,11 +99,12 @@ def BuildIndex():
     queryset = fvecs_read(queryset_path)
     # Query the elements for themselves and measure recall:
     HNSW.set_num_threads(1)
+    HNSW.set_ef(ef_search)
     start = time.perf_counter()
     labels, distances = HNSW.knn_query(queryset, k=K)
     end = time.perf_counter()
     elapsed = end - start
-    print("The time consumption for each query: ", elapsed / len(queryset), "ms")
+    print("The time consumption for each query: ", elapsed / len(queryset), "s")
 
     correct = 0
     for i in range(len(queryset)):
