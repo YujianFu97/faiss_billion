@@ -2,6 +2,7 @@ import os
 import hnswlib
 import numpy as np
 import time
+from memory_profiler import memory_usage
 
 def ivecs_read(fname):
     a = np.fromfile(fname, dtype='int32')
@@ -46,68 +47,73 @@ index_path = data_path + data + "/" + data + data_size + "/" + data + data_size 
 queryset_path = data_path + data + "/" + data + data_size + "/" + data + data_size + "_query.fvecs"
 gt_path= data_path + data + "/" + data + data_size + "/" + data + data_size + "_GT_100"
 
-print(gt_path)
-assert(os.path.exists(gt_path))
-gt, dist = gtbin_read(gt_path)
+def BuildIndex():
+    assert(os.path.exists(gt_path))
+    gt, dist = gtbin_read(gt_path)
 
-if not (os.path.exists(index_path)):
-    # Declaring index
-    HNSW = hnswlib.Index(space='l2', dim=dim)  # possible options are l2, cosine or ip
+    if not (os.path.exists(index_path)):
+        # Declaring index
+        HNSW = hnswlib.Index(space='l2', dim=dim)  # possible options are l2, cosine or ip
 
-    # Load the data for construction
-    assert(os.path.exists(dataset_path))
-    dataset = fvecs_read(dataset_path)
+        # Load the data for construction
+        assert(os.path.exists(dataset_path))
+        print("Loading base dataset from ", dataset_path)
+        dataset = fvecs_read(dataset_path)
 
-    # Initing index
-    # max_elements - the maximum number of elements (capacity). Will throw an exception if exceeded
-    # during insertion of an element.
-    # The capacity can be increased by saving/loading the index, see below.
-    #
-    # ef_construction - controls index search speed/build speed tradeoff
-    #
-    # M - is tightly connected with internal dimensionality of the data. Strongly affects the memory consumption (~M)
-    # Higher M leads to higher accuracy/run_time at fixed ef/efConstruction
-    HNSW.init_index(max_elements=num_elements, ef_construction=ef_construction, M=M)
+        # Initing index
+        # max_elements - the maximum number of elements (capacity). Will throw an exception if exceeded
+        # during insertion of an element.
+        # The capacity can be increased by saving/loading the index, see below.
+        #
+        # ef_construction - controls index search speed/build speed tradeoff
+        #
+        # M - is tightly connected with internal dimensionality of the data. Strongly affects the memory consumption (~M)
+        # Higher M leads to higher accuracy/run_time at fixed ef/efConstruction
+        HNSW.init_index(max_elements=num_elements, ef_construction=ef_construction, M=M)
 
-    # Controlling the recall by setting ef:
-    # higher ef leads to better accuracy, but slower search
-    HNSW.set_ef(ef_search)
+        # Controlling the recall by setting ef:
+        # higher ef leads to better accuracy, but slower search
+        HNSW.set_ef(ef_search)
 
-    # Set number of threads used during batch search/construction
-    # By default using all available cores
-    start_time = time.time()
-    print("Adding %d elements from the database set" % (len(dataset)))
-    HNSW.set_num_threads(64)
-    HNSW.add_items(dataset)
-    end_time = time.time()
-    print("The time construction of HNSW graph: ", end_time - start_time, "s")
-    
-    # Serializing and deleting the index:
-    print("Saving index to '%s'" % index_path)
-    HNSW.save_index(index_path)
+        # Set number of threads used during batch search/construction
+        # By default using all available cores
+        start_time = time.time()
+        print("Adding %d elements from the database set" % (len(dataset)))
+        HNSW.set_num_threads(64)
+        HNSW.add_items(dataset)
+        end_time = time.time()
+        print("The time construction of HNSW graph: ", end_time - start_time, "s")
 
-# Reiniting, loading the index
-HNSW = hnswlib.Index(space='l2', dim=dim)  # the space can be changed - keeps the data, alters the distance function.
-# Load the constructed index
-print("\nLoading index from "+index_path)
-assert(os.path.exists(index_path))
-HNSW.load_index(index_path, max_elements = num_elements)
+        # Serializing and deleting the index:
+        print("Saving index to '%s'" % index_path)
+        HNSW.save_index(index_path)
 
-assert(os.path.exists(queryset_path))
-queryset = fvecs_read(queryset_path)
-# Query the elements for themselves and measure recall:
-HNSW.set_num_threads(1)
-start = time.perf_counter()
-labels, distances = HNSW.knn_query(queryset, k=K)
-end = time.perf_counter()
-elapsed = end - start
-print("The time consumption for each query: ", elapsed / len(queryset), "ms")
+    # Reiniting, loading the index
+    HNSW = hnswlib.Index(space='l2', dim=dim)  # the space can be changed - keeps the data, alters the distance function.
+    # Load the constructed index
+    print("\nLoading index from "+index_path)
+    assert(os.path.exists(index_path))
+    HNSW.load_index(index_path, max_elements = num_elements)
 
-correct = 0
-for i in range(len(queryset)):
-    gt_set = set(gt[i][:K])
-    label_set = set(labels[i][:K])
-    correct += len(gt_set.intersection(label_set))
+    assert(os.path.exists(queryset_path))
+    queryset = fvecs_read(queryset_path)
+    # Query the elements for themselves and measure recall:
+    HNSW.set_num_threads(1)
+    start = time.perf_counter()
+    labels, distances = HNSW.knn_query(queryset, k=K)
+    end = time.perf_counter()
+    elapsed = end - start
+    print("The time consumption for each query: ", elapsed / len(queryset), "ms")
+
+    correct = 0
+    for i in range(len(queryset)):
+        gt_set = set(gt[i][:K])
+        label_set = set(labels[i][:K])
+        correct += len(gt_set.intersection(label_set))
 
 
-print("Recall for query set: Number of quries:", len(queryset), "Recall", K, "@", K, "=", correct / (len(queryset) * K) ,"\n")
+    print("Recall for query set: Number of quries:", len(queryset), "Recall", K, "@", K, "=", correct / (len(queryset) * K) ,"\n")
+
+mem_usage = memory_usage(BuildIndex)
+#print('Memory usage (in chunks of .1 seconds): %s' % mem_usage)
+print('Maximum memory usage: %s' % max(mem_usage))
