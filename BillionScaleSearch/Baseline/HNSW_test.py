@@ -38,7 +38,7 @@ num_elements = 100000000
 
 M = 16
 ef_construction = 100
-ef_search = 10
+ef_search = 100
 K = 1
 
 data_path = "/data/yujian/Dataset/"
@@ -96,15 +96,17 @@ def BuildIndex():
     HNSW.load_index(index_path, max_elements = num_elements)
 
     assert(os.path.exists(queryset_path))
+    print("Loading the query vectors")
     queryset = fvecs_read(queryset_path)
     # Query the elements for themselves and measure recall:
+    print("Searching the query vectors")
     HNSW.set_num_threads(1)
     HNSW.set_ef(ef_search)
     start = time.perf_counter()
     labels, distances = HNSW.knn_query(queryset, k=K)
     end = time.perf_counter()
     elapsed = end - start
-    print("The time consumption for each query: ", elapsed / len(queryset), "s")
+    print("The time consumption for each query: ", 1000 * elapsed / len(queryset), "ms")
 
     correct = 0
     for i in range(len(queryset)):
@@ -113,7 +115,7 @@ def BuildIndex():
         correct += len(gt_set.intersection(label_set))
 
 
-    print("Recall for query set: Number of quries:", len(queryset), "Recall", K, "@", K, "=", correct / (len(queryset) * K) ,"\n")
+    print("Recall for query set: Number of quries:", len(queryset), "Recall", K, "@", K, "=", correct / (len(queryset) * K) ," efQuery = ", ef_search)
 
 mem_usage = memory_usage(BuildIndex)
 #print('Memory usage (in chunks of .1 seconds): %s' % mem_usage)
