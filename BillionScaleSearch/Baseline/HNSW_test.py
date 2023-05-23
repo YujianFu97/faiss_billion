@@ -33,7 +33,7 @@ Example of index building, search and serialization/deserialization
 """
 data = "SpaceV"
 data_size = "100M"
-dim = 128
+dim = 100
 num_elements = 100000000
 
 M = 16
