@@ -46,6 +46,7 @@ index_path = dataset_path + data + "/" + data + data_size + "/" + data + data_si
 queryset_path = dataset_path + data + "/" + data + data_size + "/" + data + data_size + "_query.fvecs"
 gt_path= dataset_path + data + "/" + data + data_size + "/" + data + data_size + "_GT_100"
 
+print(gt_path)
 assert(os.path.exists(gt_path))
 gt, dist = gtbin_read(gt_path)
 print(gt)
