@@ -50,7 +50,7 @@ print(gt_path)
 assert(os.path.exists(gt_path))
 gt, dist = gtbin_read(gt_path)
 
-if (os.path.exists(index_path)):
+if not (os.path.exists(index_path)):
     # Declaring index
     HNSW = hnswlib.Index(space='l2', dim=dim)  # possible options are l2, cosine or ip
 
