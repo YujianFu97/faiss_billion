@@ -10,7 +10,7 @@
 #include "utils/utils.h"
 #include "hnswlib/hnswalg.h"
 #include "hnswlib_old/hnswalg.h"
-#include "FastPFor/headers/codecfactory.h"
+//#include "FastPFor/headers/codecfactory.h"
 //#include "complib/include/codecfactory.h"
 
 constexpr float UNDEFINED_TARGET_CLUSTER_DIST = -1.0f;
