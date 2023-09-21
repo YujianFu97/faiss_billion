@@ -39,7 +39,7 @@ faiss: ${FAISS}
 
 
 % :	%.cpp ./utils/utils.h ./hnswlib_old/hnswalg.cpp ../build/faiss/libfaiss.a 
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ $(LDFLAGS) -I../ $(LIBS) ./complib/*.o  ./FastPFor/build/*.a
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ $(LDFLAGS) -I../ $(LIBS)
 
 clean:
 	rm -f $(MAINTEST)
