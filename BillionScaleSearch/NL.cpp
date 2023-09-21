@@ -901,6 +901,7 @@ int main(int argc, char* argv[]) {
                 return EXIT_FAILURE;
         }
     }
+    
     // Output the parsed values (for testing purposes)
     std::cout << "rerunCentroids: " << rerunCentroids << "\n"  << "rerunComputeNN: " << rerunComputeNN << "\n" << "rerunComputeNL: " << rerunComputeNL << "\n";
 
