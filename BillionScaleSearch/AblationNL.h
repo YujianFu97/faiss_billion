@@ -1,5 +1,5 @@
 #include "Index/BIndex.h"
-#include "parameters/BillionScale/ParameterResults.h"
+#include "parameters/MillionScale/ParameterResults.h"
 #include "utils/utils.h"
 
 #include "FastPFor/headers/codecfactory.h"
@@ -88,7 +88,7 @@ bool Intersect(uint32_t * first1, uint32_t * last1, int64_t * first2, int64_t * 
         if (*first2 < *first1) {
             ++first2;
             continue;
-        } 
+        }
         return true;
     }
     return false;
@@ -120,7 +120,7 @@ void PrintNL(std::vector<std::unordered_map<uint32_t, std::vector<uint32_t>>> & 
 }
 
 uint32_t SearchMultiFull(time_recorder & Trecorder, size_t nq, size_t RecallK, float * Query, int64_t * QueryIds, float * QueryDists, size_t EfSearch, size_t MaxItem, size_t EfNeighborList, bool UseList,
-hnswlib::HierarchicalNSW * CenGraph, float * QCDist, uint32_t * QCID, std::vector<std::vector<uint32_t>> & BaseCompIds, float * CentroidsNorm, uint32_t * BaseIdCompIndice,
+hnswlib::HierarchicalNSW * CenGraph, float * QCDist, uint32_t * QCID, std::vector<std::vector<uint32_t>> & BaseCompIds, float * CentroidsNorm, 
 float * NeighborListAlpha, float * NeighborListAlphaNorm, uint32_t * NeighborListAlphaTar, uint32_t * NeighborListAlphaIndice, uint32_t * NeighborListAlphaCompIndice, uint32_t * NeighborListVec, uint32_t * NeighborListVecIndice,
 uint32_t * NeighborListNumTarIndice, uint32_t * NeighborListNumTar, uint32_t * NeighborListTarIDIndice, uint32_t * NeighborListTarID,
 int64_t * NL2SearchID, float * NL2SearchDist, float * BaseVectors, uint32_t * DeCompBaseIDs, uint32_t * DeCompAlphaTarID, uint32_t * DeCompVecID, uint32_t * DeCompNumTar, uint32_t * DeCompTarID, int64_t * ClusterIDSet, uint32_t * ClusterIDSetIndice,
@@ -137,7 +137,6 @@ FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecLis
         }
         faiss::maxheap_heapify(RecallK, QueryDists + QueryIdx * RecallK, QueryIds + QueryIdx * RecallK);
     }
-
 
     for (size_t QueryIdx = 0; QueryIdx < nq; QueryIdx++){
         size_t VisitedItem = 0;
@@ -160,7 +159,7 @@ FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecLis
             SumVisitedItem += VisitedItem;
             continue;
         }
-        
+
         if (UseList){
             //Trecorder.reset();
             // Todo: remove this assertion
@@ -338,16 +337,12 @@ FastPForLib::IntegerCODEC & codec, uint32_t MaxAlphaListSize, uint32_t MaxVecLis
     return SumVisitedItem;
 }
 
+/*
 uint32_t SearchMulti(time_recorder & Trecorder, size_t nq, size_t K, size_t QuantBatchSize, float * Query, int64_t * QueryIds, float * QueryDists, size_t EfSearch, size_t MaxItem, size_t EfNeighborList, bool UseList, bool UseQuantize, bool NeighborListOnly,
 faiss::ProductQuantizer * PQ, faiss::LinearTransform * OPQ, hnswlib::HierarchicalNSW * CenGraph, float * CentroidsDist, float * QCDist, uint32_t * QCID, float * PQTable,
 float * CNorms, float * BaseNorms, uint8_t * BaseCodes, std::vector<std::vector<uint32_t>> & BaseIds, std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::pair<std::vector<uint32_t>, std::vector<float>>>> & NewNeighborList, 
 float * NeighborListAlpha, uint32_t * NeighborListAlphaTar, uint32_t * NeighborListAlphaIndice, uint32_t * NeighborListVector, uint32_t * NeighborListVectorIndice
 ){
-/*
-    std::vector<float> BaseVectors(nb * Dimension);
-    std::ifstream BaseInput(PathBase, std::ios::binary);
-    readXvecFvec<float>(BaseInput, BaseVectors.data(), Dimension, nb);
-*/
 
     uint32_t SumVisitedItem = 0;
     //Trecorder.reset();
@@ -401,12 +396,6 @@ float * NeighborListAlpha, uint32_t * NeighborListAlphaTar, uint32_t * NeighborL
         }
         VisitedItem += BaseIds[BaseClusterID].size();
         //std::cout << " Visited Items: " << VisitedItem << "\n"; 
-/*
-        if (VisitedItem > MaxItem){
-            SumVisitedItem += VisitedItem;
-            continue;
-        }
-*/
         //Trecorder.recordTimeConsumption1();
 
         //std::cout << " Search the neighbor list 1\n"; 
@@ -446,13 +435,6 @@ float * NeighborListAlpha, uint32_t * NeighborListAlphaTar, uint32_t * NeighborL
                     }
                 }
             }
-
-/*
-            for (size_t i = 0; i < EfNeighborList; i++){
-                std::cout << NL2SearchID[i] << " ";
-            }
-            std::cout << "\n";
-*/
 
             int64_t ClusterIDSet[EfSearch - 1][EfSearch]; 
             for (size_t i = 0; i < EfSearch -1; i++){
@@ -574,12 +556,10 @@ float * NeighborListAlpha, uint32_t * NeighborListAlphaTar, uint32_t * NeighborL
         //Trecorder.recordTimeConsumption3();
     }
 
-    
     //std::cout << "The number of NLConflict is: " << float(SumNLConflict) / nq << "\n";
-
     return SumVisitedItem;
 }
-
+*/
 
 void TrainQuantizer(time_recorder & Trecorder, size_t PQTrainSize, std::string PathLearn, std::string PathPQ, std::string PathOPQ,
 hnswlib::HierarchicalNSW * CenGraph){
@@ -770,12 +750,13 @@ hnswlib::HierarchicalNSW * CenGraph, faiss::ProductQuantizer * PQ, faiss::Linear
     return;
 }
 
+
 void ComputeNN(
 size_t Graph_num_batch, size_t SearchK, size_t DatasetSize,
 
 time_recorder & TRecorder, memory_recorder & MRecorder, 
 
-std::string NNDatasetName, std::string PathDataset, std::string PathDatasetNN, std::string PathSubGraphFolder
+ std::string PathDataset, std::string PathDatasetNN, std::string PathSubGraphFolder
  ){
     // Compute the nearest neighbors of vectors in a given set (include the vectors themselves) 
 
@@ -791,8 +772,8 @@ std::string NNDatasetName, std::string PathDataset, std::string PathDatasetNN, s
         size_t Graph_batch_size = DatasetSize / Graph_num_batch;
 
         for (size_t i = 0; i < Graph_num_batch; i++){
-            std::string PathSubGraphInfo = PathSubGraphFolder + NNDatasetName + "SubGraph_" + std::to_string(Graph_num_batch) + "_" + std::to_string(i) + ".info";
-            std::string PathSubGraphEdge = PathSubGraphFolder + NNDatasetName + "SubGraph_" + std::to_string(Graph_num_batch) + "_" + std::to_string(i) + ".edge";
+            std::string PathSubGraphInfo = PathSubGraphFolder + "SubGraph_" + std::to_string(Graph_num_batch) + "_" + std::to_string(i) + ".info";
+            std::string PathSubGraphEdge = PathSubGraphFolder + "SubGraph_" + std::to_string(Graph_num_batch) + "_" + std::to_string(i) + ".edge";
 
             if (!exists(PathSubGraphInfo)){
                 std::vector<float> DatasetBatch(Graph_batch_size * Dimension);
@@ -871,7 +852,6 @@ std::string NNDatasetName, std::string PathDataset, std::string PathDatasetNN, s
 
         MRecorder.print_memory_usage("");
         TRecorder.print_time_usage("Completed NN search and Assignment");
-
         if (!exists(PathDatasetNN)){
             std::ofstream DatasetNNOutput(PathDatasetNN, std::ios::binary);
             for (size_t i = 0 ; i < Graph_num_batch; i++){
@@ -889,6 +869,61 @@ std::string NNDatasetName, std::string PathDataset, std::string PathDatasetNN, s
     }
 }
 
+/*
+void ComputeNN(
+    size_t SearchK, size_t DatasetSize,
+    time_recorder & TRecorder, memory_recorder & MRecorder,
+    std::string GraphFolder, std::string PathDataset, std::string PathDatasetNN
+){
+
+    if (!exists(PathDatasetNN)){
+        PrepareFolder(GraphFolder.c_str());
+
+        std::string PathGraphInfo = GraphFolder  + "Graph_" + std::to_string(DatasetSize) +  ".info";
+        std::string PathGraphEdge = GraphFolder  + "Graph_" + std::to_string(DatasetSize) +  ".edge";
+
+        if (!exists(PathGraphInfo)){
+            std::vector<float> Dataset(DatasetSize * Dimension);
+            std::ifstream DatasetInput(PathDataset, std::ios::binary);
+            readXvecFvec<DataType>(DatasetInput, Dataset.data(), Dimension, DatasetSize, true, true);
+            DatasetInput.close();
+            std::cout << "Constructing HNSW index with " << DatasetSize << " vectors\n";
+            hnswlib::HierarchicalNSW * SubGraph = new hnswlib::HierarchicalNSW(Dimension, DatasetSize);
+            for (size_t j = 0; j < DatasetSize; j++){
+                if ((j + 1) % (DatasetSize / 10) == 0){std::cout << "Completed " << j + 1 << " " << DatasetSize << "\n";}
+                SubGraph->addPoint(Dataset.data() + j * Dimension);
+            }
+            SubGraph->SaveInfo(PathGraphInfo);
+            SubGraph->SaveEdges(PathGraphEdge);
+            delete(SubGraph);
+        }
+
+        std::ifstream DatasetInput(PathDataset, std::ios::binary);
+        std::vector<std::vector<uint32_t>> allNNs(DatasetSize, std::vector<uint32_t>(SearchK));
+        hnswlib::HierarchicalNSW * Graph = new hnswlib::HierarchicalNSW(PathGraphInfo, PathGraphEdge, DatasetInput);
+
+#pragma omp parallel for schedule(dynamic)
+        for (size_t i = 0; i < DatasetSize; i++) {
+            auto result = Graph->searchKnn(Graph->getDataByInternalId(i), SearchK);
+            for (size_t temp = 0; temp < SearchK; temp++) {
+                allNNs[i][SearchK - temp - 1] = result.top().second;
+                result.pop();
+            }
+        }
+        delete(Graph);
+
+        // Code to save the results to disk, similar to the original code
+        MRecorder.print_memory_usage("");
+        TRecorder.print_time_usage("Completed NN search");
+        // ...
+        std::ofstream DatasetNNOutput(PathDatasetNN, std::ios::binary);
+        for (size_t i = 0 ; i < DatasetSize; i++) {
+            DatasetNNOutput.write((char *) allNNs[i].data(), SearchK * sizeof(uint32_t));
+        }
+        DatasetNNOutput.close();
+    }
+}
+*/
 
 void BuildNeighborList(
     size_t SearchK, size_t Num_batch, size_t DatasetSize, size_t NeighborNum, size_t NLTargetK, bool BaseConflict, bool DistPrune, bool UseQuantize, size_t QuantBatchSize,
@@ -905,7 +940,7 @@ void BuildNeighborList(
         std::cout << "Constructing the neighbor list index and save it to: " << PathNeighborList << "\n";
         size_t Batch_size = DatasetSize / Num_batch;
 
-        // Get the neighbor ID and the dist of training vectors
+        // Get the neighbor cluster ID and the dist of training vectors
         if (!exists(PathDatasetNeighborID) || !exists(PathDatasetNeighborDist)){
             std::ofstream DatasetNeighborIDOutput(PathDatasetNeighborID, std::ios::binary);
             std::ofstream DatasetNeighborDistOutput(PathDatasetNeighborDist, std::ios::binary);
@@ -920,7 +955,6 @@ void BuildNeighborList(
                 readXvecFvec<DataType>(DatasetInput, DatasetBatch.data(), Dimension, Batch_size, true, false);
 #pragma omp parallel for
                 for (size_t j = 0; j < Batch_size; j++){
-
                     auto result =  CenGraph->searchKnn(DatasetBatch.data() + j * Dimension, NeighborNum);
                     for (size_t temp = 0; temp < NeighborNum; temp++){
                         DatasetIDBatch[j * NeighborNum + NeighborNum - temp - 1] = result.top().second;
@@ -973,7 +1007,6 @@ void BuildNeighborList(
         std::cout << "\n";
 
         size_t SumConflicts = 0;
-
         for (uint32_t i = 0; i < Num_batch; i++){
             for (uint32_t j = 0; j < Batch_size; j++){
 
@@ -990,7 +1023,6 @@ void BuildNeighborList(
 
                         if (BoundaryConflictMap.find(NNClusterID) != BoundaryConflictMap.end()){
                             // There is already boundary conflict recorded on this boundary
-
                             if (BoundaryConflictMap[NNClusterID].find(TargetClusterID) != BoundaryConflictMap[NNClusterID].end()){
                                 BoundaryConflictMap[NNClusterID][TargetClusterID].insert(NNID);
                             }
@@ -1016,14 +1048,13 @@ void BuildNeighborList(
                         else{
                             BoundaryConflictMap[TargetClusterID] = std::unordered_map<uint32_t, std::set<uint32_t>> ({{NNClusterID, std::set<uint32_t>({TargetVectorID})}});
                         }
-
 */
                     }
                 }
             }
         }
 
-        std::cout << "Total number of conflicts " << SumConflicts << " in " << DatasetSize << " vectors and " << nc << " clusters, SearchK: " << SearchK << "\n";
+        std::cout << "Phase1: Boundary Conflict Identification Completed, Total number of conflicts " << SumConflicts << " in " << DatasetSize << " vectors and " << nc << " clusters, SearchK: " << SearchK << "\n";
         TRecorder.print_time_usage("Identify all boundary conflicts");
 
         // Scan the base set and get the distance boundary (NN vector to the boundary) of the neighbor list
@@ -1452,7 +1483,6 @@ void BuildNeighborList(
             }
         }
         else{
-
             std::cout << "Reorgnize and save the neighor list to disk\n";
             uint32_t NumAlphaList = 0, NumTarList = 0, NumVecID = 0, 
                      MaxVecListSize = 0, MaxTarListSize = 0, MaxAlphaListSize = 0,
@@ -1485,7 +1515,6 @@ void BuildNeighborList(
                         }
                     }
                 }
-
                 for (auto VecIt = VecInNls.begin(); VecIt != VecInNls.end(); VecIt++){
                     NeighborListVecID[NNClusterID].emplace_back(VecIt->first);
                     NeighborListNumCluster[NNClusterID].emplace_back(VecIt->second.size());
@@ -1536,7 +1565,7 @@ void BuildNeighborList(
 
             for (uint32_t i = 0; i < nc; i++){
                 size_t Compressedsize = 0;
-                
+
                 if (BoundaryConflictMap.find(i) != BoundaryConflictMap.end()){
                     for (auto it = BoundaryConflictMap[i].begin(); it != BoundaryConflictMap[i].end(); it++){
                         float Alpha = NeighborListAlpha[std::make_pair(i, it->first)];

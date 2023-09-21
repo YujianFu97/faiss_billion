@@ -1,10 +1,15 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
-#include "fstream"
-#include "iostream"
 #include "../../faiss/utils/random.h"
 #include "../../faiss/utils/Heap.h"
+#include "../../faiss/Clustering.h"
+#include "../../faiss/IndexFlat.h"
+#include "../../faiss/utils/distances.h"
+#include "../../faiss/utils/utils.h"
+#include "../../faiss/utils/random.h"
+#include  "../../faiss/Clustering.h"
+#include "../hnswlib/hnswalg.h"
 #include <queue>
 #include <chrono>
 #include <string.h>
@@ -12,6 +17,44 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <omp.h>
+#include <ctime>
+#include "fstream"
+#include "iostream"
+
+struct performance_recorder {
+private:
+    std::chrono::steady_clock::time_point start_time;
+    long initial_memory;
+    std::string label;
+
+    long get_peak_memory() {
+        struct rusage r_usage;
+        getrusage(RUSAGE_SELF, &r_usage);
+        return r_usage.ru_maxrss;
+    }
+
+    float get_time_elapsed() {
+        return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000000.0f;
+    }
+
+public:
+    performance_recorder(const std::string& label) : start_time(std::chrono::steady_clock::now()), initial_memory(get_peak_memory()), label(label) {
+        std::time_t now = std::time(0);
+        std::cout << "Initialization - " << label << " - Time: " << std::ctime(&now) << "Peak Memory: " << initial_memory / 1000 << " MB\n";
+    }
+
+    void print_performance(const std::string& label) {
+        float time_elapsed = get_time_elapsed();
+        long peak_memory = get_peak_memory();
+        std::time_t now = std::time(0);
+        std::cout << label << " - Time: " << std::ctime(&now) << "Elapsed: " << time_elapsed << " seconds, Peak Memory: " << (peak_memory - initial_memory) / 1000 << " MB\n";
+    }
+
+    ~performance_recorder() {
+        print_performance("Destruction - " + label);
+    }
+};
 
 struct time_recorder{
     std::chrono::steady_clock::time_point start_time;
@@ -67,14 +110,11 @@ struct time_recorder{
             std::cout << s << " The time usage: |" << getTimeConsumption() / 1000000 << "| s, now time: " << dt << std::endl;
         }
 
-        inline float get_time_usage(){
-            return getTimeConsumption() / 1000000;
-        }
 };
 
 struct memory_recorder{
     public:
-        
+
     void record_memory_usage(std::ofstream & output_record, std::string s){
         rusage r_usage;
         getrusage(RUSAGE_SELF, &r_usage);
@@ -105,9 +145,10 @@ struct recall_recorder{
 };
 
 template<typename T>
-void CheckResult(T * data, const size_t dimension, size_t dataset_size = 2){
+void CheckResult(T * data, size_t dimension, size_t dataset_size = 2){
     std::cout << "Printing sample (2 vectors) of the dataset " << std::endl;
 
+    if (dimension > 100){dimension = 100;}
     for (size_t i = 0; i < dimension; i++){
         std::cout << data[i] << " ";
     }
@@ -124,7 +165,7 @@ void readXvec(std::ifstream & in, T * data, const size_t dimension, const size_t
     if (ShowProcess)
     std::cout << "Loading data with " << n << " vectors in " << dimension << std::endl;
     uint32_t dim = dimension;
-    size_t print_every = n / 10;
+    size_t print_every = n / 5;
     for (size_t i = 0; i < n; i++){
         in.read((char *) & dim, sizeof(uint32_t));
         if (dim != dimension){
@@ -146,7 +187,7 @@ void readXvecFvec(std::ifstream & in, float * data, const size_t dimension, cons
     std::cout << "Loading data with " << n << " vectors in " << dimension << std::endl;
     uint32_t dim = dimension;
     std::vector<T> origin_data(dimension);
-    size_t print_every = n / 10;
+    size_t print_every = n / 5;
     for (size_t i = 0; i < n; i++){
         in.read((char * ) & dim, sizeof(uint32_t));
         if (dim != dimension) {

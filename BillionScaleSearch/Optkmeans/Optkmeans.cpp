@@ -459,6 +459,7 @@ void updatecentroids(size_t nc, size_t Dimension, size_t TrainSize,
     std::cout << "Update the cluster centroids with " << n_void << " splits \n";
 }
 
+/*
 // Kmeans training with neighbor info for optimization
 std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> neighborkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, float prop, size_t NLevel, size_t NumOptimization, size_t KOptimization, size_t NeighborNum,
             float * Centroids, bool verbose, bool Optimize, std::vector<std::vector<uint32_t>> & TrainIds, std::vector<std::vector<uint32_t>>  & VectorOutIDs,
@@ -581,31 +582,6 @@ std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> neigh
     }
     std::cout << "\n";
 
-
-
-/*
-    std::vector<int64_t> VectorGt(TrainSize * KOptimization);
-    std::vector<float> VectorDist(TrainSize * KOptimization);
-#pragma omp parallel for
-    for (uint32_t i = 0; i < TrainSize; i++){
-        faiss::maxheap_heapify(KOptimization, VectorDist.data() + i * KOptimization, VectorGt.data() + i * KOptimization);
-        for (size_t j = 0; j < ClusterBoundSize; j++){
-            uint32_t ClusterID = NeighborClusterIDBound[i * ClusterBoundSize + j];
-            for (size_t temp = 0; temp < TrainIds[ClusterID].size(); temp++){
-                uint32_t VectorID = TrainIds[ClusterID][temp];
-                if (VectorID == i){
-                    continue;
-                }
-                float Dist = faiss::fvec_L2sqr(TrainSet + i * Dimension, TrainSet + VectorID * Dimension, Dimension);
-                if (Dist < VectorDist[i * KOptimization]){
-                    faiss::maxheap_pop(KOptimization, VectorDist.data() + i * KOptimization, VectorGt.data() + i * KOptimization);
-                    faiss::maxheap_push(KOptimization, VectorDist.data() + i * KOptimization, VectorGt.data() + i * KOptimization, Dist, VectorID);
-                }
-            }
-        }
-    }
-*/
-
     Trecorder.print_time_usage("Compute the groundtruth of train vectors");
 
     for (size_t i = 0; i < TrainSize; i++){
@@ -620,76 +596,6 @@ std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> neigh
         }
         std::cout << "\n";
     }
-
-/*
-    std::vector<uint32_t> CenNeighborIDs(nc * ClusterBoundSize); std::vector<float> CenNeighborDists(nc * ClusterBoundSize); 
-    std::vector<float> ClusterCostList;
-    for (size_t it = 0; it < neiterations; it++){
-        std::cout << "Now in the " << it+1 << " / " << neiterations << " iterations\n The top 10 and end 10 id:\n"; 
-
-        for(size_t i = 0; i < 10; i++){
-            std::cout<< AssignmentID[i] << " ";
-        }
-        for(size_t i = 0; i < 10; i ++){
-            std::cout << AssignmentID[TrainSize - i - 1] << " ";
-        }
-        std::cout << "\n";
-
-        std::cout << "The cluster size of the last 10 clusters:\n";
-        for(size_t i = 0; i < 10; i++){
-            std::cout << ClusterSize[i] << " ";
-        }
-        for(size_t i = 0; i < 10; i++){
-            std::cout << ClusterSize[nc - i - 1] << " ";
-        }
-        std::cout << "\n";
-
-        // Update the vector assignment 
-        auto result = neioptimize(TrainSize, NeighborNum, RecallK, Dimension, prop, Visualize, TrainBeNNs, TrainSet, Centroids, VectorGt.data(), AssignmentID.data(), NeighborClusterID.data(), ClusterSize.data(), NeighborClusterDist.data());
-
-        ClusterCostList.emplace_back(result.first / TrainSize); ClusterCostList.emplace_back(result.second / TrainSize);
-        Trecorder.print_time_usage("Optimize the assignment based on gt search cost"); 
-
-        // Update the centroids 
-        updatecentroids(nc, Dimension, TrainSize, TrainSet, AssignmentID.data(), Centroids, ClusterSize.data()); 
-        Trecorder.print_time_usage("Update the centroids with optimized assignment"); 
-
-        // Update the train vector assignment
-        for (size_t i = 0; i < nc; i++){TrainIDs[i].resize(0);}
-        for (size_t i = 0; i < TrainSize; i++){TrainIDs[AssignmentID[i]].emplace_back(i);} 
-        GraphSearch(CenNeighborIDs.data(), CenNeighborDists.data(), Centroids, Centroids, nc, nc, ClusterBoundSize, Dimension); 
-        assert(ClusterBoundSize > NeighborNum); 
-        for (size_t i = 0; i < nc; i++){ 
-            ClusterSize[i] = 0; 
-            hnswlib::HierarchicalNSW * SubGraph = new hnswlib::HierarchicalNSW(Dimension, ClusterBoundSize); // Note: we use the default parameter setting in hnsw 
-            for (size_t j = 0; j < ClusterBoundSize; j++){ 
-                uint32_t ClusterID = CenNeighborIDs[i * ClusterBoundSize + j]; 
-                SubGraph->addPoint(Centroids + ClusterID * Dimension); 
-            }
-
-#pragma omp parallel for
-            for (size_t j = 0; j < TrainIDs[i].size(); j++){
-                auto result = SubGraph->searchKnn(TrainSet + TrainIDs[i][j] * Dimension, NeighborNum);
-                for (size_t k = 0; k < NeighborNum; k++){
-                    NeighborClusterDist[TrainIDs[i][j] * NeighborNum + NeighborNum - 1 - k] = result.top().first;
-                    NeighborClusterID[TrainIDs[i][j] * NeighborNum + NeighborNum - 1 - k] =  CenNeighborIDs[i * ClusterBoundSize + result.top().second];
-                    result.pop();
-                }
-            }
-        }
-
-        for (size_t i = 0; i < TrainSize; i++){
-            AssignmentID[i] = NeighborClusterID[i * NeighborNum];
-            ClusterSize[AssignmentID[i]] ++;
-            if (keeptrainlabels){
-                trainlabels[i] = NeighborClusterID[i * NeighborNum];
-                traindists[i] = NeighborClusterDist[i * NeighborNum];
-            }
-        }
-        Trecorder.print_time_usage("Update the assignment with sub-graph search");
-    }
-*/
-
     std::vector<std::unordered_set<uint32_t>> VectorCostSet(TrainSize);
 
     // Check the conflict number of boundary and update the maximum distance to the boundary
@@ -778,7 +684,7 @@ std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> neigh
 
     return BoundaryConflictMap;
 }
-
+*/
 
 // Do the kmeans training with the cluster size optimization, expect balanced cluster size
 float optkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc, 
@@ -944,7 +850,7 @@ float optkmeans(float * TrainSet, size_t Dimension, size_t TrainSize, size_t nc,
 
         // Report the training result
         
-            printf("Iteration (%ld), time (%.2f) s, Dist (%.2f), cluster split (%ld), Cluster size STD: (%.2lf), Diff Prop: (%.1lf) / (%.0lf), Max:  %ld, Min: %ld \n", i, Trecorder.get_time_usage(), sse / TrainSize, n_void, stdev, diffprop/nc, m, MaxSize, MinSize);
+            printf("Iteration (%ld), time (%.2f) s, Dist (%.2f), cluster split (%ld), Cluster size STD: (%.2lf), Diff Prop: (%.1lf) / (%.0lf), Max:  %ld, Min: %ld \n", i, Trecorder.getTimeConsumption(), sse / TrainSize, n_void, stdev, diffprop/nc, m, MaxSize, MinSize);
         }
 
         /*
@@ -987,7 +893,6 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
 
     // Initialization
     size_t nc_layer = std::floor(pow(nc, 1.0/level));
-
     size_t nc_completed = 1;
 
     std::vector<uint32_t> labels(trainsize);
@@ -1011,7 +916,7 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
     }
     nc_completed = nc_layer;
 
-    printf("Completed first layer training with time consumption %.2f s \n", Trecorder.get_time_usage());
+    printf("Completed first layer training with time consumption %.2f s \n", Trecorder.getTimeConsumption());
 
     for (size_t each_level = 1; each_level < level; each_level++){
         // Assign the trainset
@@ -1042,7 +947,7 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
             memcpy(trainsets[label].data() + temp_trainsizes[label] * dimension, trainset + i * dimension, dimension * sizeof(float));
             temp_trainsizes[label]++;
         }
-        printf("Completed trainset re-orgnization with time consumption %.2f s \n", Trecorder.get_time_usage());
+        printf("Completed trainset re-orgnization with time consumption %.2f s \n", Trecorder.getTimeConsumption());
         std::cout << "The max cluster size: " << MaxSize << " Min cluster size: " << MinSize << "\n";
 
         // Update the nc setting for next layer training
@@ -1090,7 +995,7 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
         }
 
         assert(accumulated_nc[nc_completed -1] == expected_nc_next);
-        printf("Update cluster nc for the last layer with time consumption %.2f s \n", Trecorder.get_time_usage());
+        printf("Update cluster nc for the last layer with time consumption %.2f s \n", Trecorder.getTimeConsumption());
 
         // Do local kmeans training in parallel
         int nt = omp_get_max_threads();
@@ -1098,7 +1003,7 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
         size_t StartIndice = 0;
         size_t EndIndice = StartIndice + (nt < nc_completed ? nt : nc_completed);
         bool FlagContinue = true;
-        
+
         while(FlagContinue){
 #pragma omp parallel for
             for (size_t i = StartIndice; i < EndIndice; i++){
@@ -1124,13 +1029,13 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
                     assert(scaneditems == trainsizes[i]);
                 }
             }
-            std::cout << "Parallel Completed cluster split in the " << EndIndice << " constructed index " << " with " << nc_completed << " in total in " <<Trecorder.get_time_usage() << " s\n";
+            std::cout << "Parallel Completed cluster split in the " << EndIndice << " constructed index " << " with " << nc_completed << " in total in " <<Trecorder.getTimeConsumption() << " s\n";
             if (EndIndice == nc_completed){FlagContinue = false;}
             StartIndice = EndIndice;
             EndIndice = EndIndice + nt <= nc_completed ? EndIndice + nt : nc_completed;
         }
 
-        printf("\nCompleted level %ld training with time consumption %.2f s \n", each_level+1, Trecorder.get_time_usage());
+        printf("\nCompleted level %ld training with time consumption %.2f s \n", each_level+1, Trecorder.getTimeConsumption());
         nc_completed = expected_nc_next;
     }
 

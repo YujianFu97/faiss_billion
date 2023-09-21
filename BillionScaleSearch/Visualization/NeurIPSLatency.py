@@ -20,16 +20,21 @@ legendfont = 16
 legendweight = 800
 
 xstart = 0
-xend = 16
+xend = 16.0 / 64
 ystart = 0
 yend = 1.0
 
 plt.rcParams["font.weight"] = "bold"
 plt.rcParams["axes.labelweight"] = "bold"
 
-fig = plt.figure(figsize=(20,6))
+fig = plt.figure(figsize=(25,7))
 axes = fig.subplots(nrows=1, ncols=4)
 # Data for latency and recall experiment
+
+NeST_thread = 55
+Faiss_thread = 62
+IVFADCGP_thread = 52
+FaissPLE_thread = 60
 
 # Recall1@1
 # SIFT Dataset
@@ -46,10 +51,10 @@ Faiss_Recall1 = np.array([0.2, 0.36, 0.53, 0.74, 0.82, 0.86])
 FaissPLE_T =       np.array([0.99, 2.9,  6.8,  9.8,  13.4, 15.66])
 FaissPLE_Recall1 = np.array([0.22, 0.45, 0.77, 0.84, 0.875, 0.891])
 
-axes[0].plot(NeST_T, NeST_Recall1, label = "NeST", color= "brown", marker = 'o', linestyle = "solid")
-axes[0].plot(IVFADCGP_T, IVFADCGP_Recall1, label = "IVFADCGP", color = 'orange', marker = '*', linestyle = "dashed")
-axes[0].plot(FaissPLE_T, FaissPLE_Recall1, label = "FaissPLE", color = 'limegreen', marker = '.', linestyle = 'dashdot')
-axes[0].plot(Faiss_T, Faiss_Recall1, label = 'Faiss', color = 'purple', marker = 'v', linestyle = 'dotted')
+axes[0].plot(NeST_T / NeST_thread, NeST_Recall1, label = "NeST", color= "brown", marker = 'o', linestyle = "solid")
+axes[0].plot(IVFADCGP_T / IVFADCGP_thread, IVFADCGP_Recall1, label = "IVFADCGP", color = 'orange', marker = '*', linestyle = "dashed")
+axes[0].plot(FaissPLE_T / FaissPLE_thread, FaissPLE_Recall1, label = "FaissPLE", color = 'limegreen', marker = '.', linestyle = 'dashdot')
+axes[0].plot(Faiss_T / Faiss_thread, Faiss_Recall1, label = 'Faiss', color = 'purple', marker = 'v', linestyle = 'dotted')
 
 plt.xlabel('Latency / ms', fontsize = axisfont, fontweight = axisweight)
 plt.ylabel('Recall1@1', fontsize = axisfont, fontweight = axisweight)
@@ -72,10 +77,10 @@ IVFADCGP_T =        np.array([0.62, 1.88, 3.79, 6.48, 8.99, 10.8, 11.9])
 IVFADCGP_Recall1 =  np.array([0.18, 0.55, 0.71, 0.81, 0.862, 0.888, 0.90])
 
 plt.subplot(1, 4, 2)
-axes[1].plot(NeST_T, NeST_Recall1, label = "NeST", color= "brown", marker = 'o', linestyle = "solid")
-axes[1].plot(IVFADCGP_T, IVFADCGP_Recall1, label = "IVFADCGP", color = 'orange', marker = '*', linestyle = "dashed")
-axes[1].plot(FaissPLE_T, FaissPLE_Recall1, label = "FaissPLE", color = 'limegreen', marker = '.', linestyle = 'dashdot')
-axes[1].plot(Faiss_T, Faiss_Recall1, label = 'Faiss', color = 'purple', marker = 'v', linestyle = 'dotted')
+axes[1].plot(NeST_T / NeST_thread, NeST_Recall1, label = "NeST", color= "brown", marker = 'o', linestyle = "solid")
+axes[1].plot(IVFADCGP_T / IVFADCGP_thread, IVFADCGP_Recall1, label = "IVFADCGP", color = 'orange', marker = '*', linestyle = "dashed")
+axes[1].plot(FaissPLE_T / FaissPLE_thread, FaissPLE_Recall1, label = "FaissPLE", color = 'limegreen', marker = '.', linestyle = 'dashdot')
+axes[1].plot(Faiss_T / Faiss_thread, Faiss_Recall1, label = 'Faiss', color = 'purple', marker = 'v', linestyle = 'dotted')
 
 plt.xlabel('Latency / ms', fontsize = axisfont, fontweight = axisweight)
 plt.ylabel('Recall1@1', fontsize = axisfont, fontweight = axisweight)
@@ -101,10 +106,10 @@ FaissPLE_Recall1 = np.array([0.22, 0.48, 0.65, 0.82, 0.86])
 
 plt.subplot(1, 4, 3)
 
-axes[2].plot(NeST_T, NeST_Recall1, label = "NeST", color= "brown", marker = 'o', linestyle = "solid")
-axes[2].plot(IVFADCGP_T, IVFADCGP_Recall1, label = "IVFADCGP", color = 'orange', marker = '*', linestyle = "dashed")
-axes[2].plot(FaissPLE_T, FaissPLE_Recall1, label = "FaissPLE", color = 'limegreen', marker = '.', linestyle = 'dashdot')
-axes[2].plot(Faiss_T, Faiss_Recall1, label = 'Faiss', color = 'purple', marker = 'v', linestyle = 'dotted')
+axes[2].plot(NeST_T / NeST_thread, NeST_Recall1, label = "NeST", color= "brown", marker = 'o', linestyle = "solid")
+axes[2].plot(IVFADCGP_T / IVFADCGP_thread, IVFADCGP_Recall1, label = "IVFADCGP", color = 'orange', marker = '*', linestyle = "dashed")
+axes[2].plot(FaissPLE_T / FaissPLE_thread, FaissPLE_Recall1, label = "FaissPLE", color = 'limegreen', marker = '.', linestyle = 'dashdot')
+axes[2].plot(Faiss_T / Faiss_thread, Faiss_Recall1, label = 'Faiss', color = 'purple', marker = 'v', linestyle = 'dotted')
 
 plt.xlabel('Latency / ms', fontsize = axisfont, fontweight = axisweight)
 plt.ylabel('Recall1@1', fontsize = axisfont, fontweight = axisweight)
@@ -129,10 +134,10 @@ IVFADCGP_Recall1 =  np.array([0.18, 0.35, 0.51, 0.64, 0.79, 0.81, 0.89, 0.91])
 
 plt.subplot(1, 4, 4)
 
-axes[3].plot(NeST_T, NeST_Recall1, label = "NeST", color= "brown", marker = 'o', linestyle = "solid")
-axes[3].plot(IVFADCGP_T, IVFADCGP_Recall1, label = "IVFADCGP", color = 'orange', marker = '*', linestyle = "dashed")
-axes[3].plot(FaissPLE_T, FaissPLE_Recall1, label = "FaissPLE", color = 'limegreen', marker = '.', linestyle = 'dashdot')
-axes[3].plot(Faiss_T, Faiss_Recall1, label = 'Faiss', color = 'purple', marker = 'v', linestyle = 'dotted')
+axes[3].plot(NeST_T / NeST_thread, NeST_Recall1, label = "NeST", color= "brown", marker = 'o', linestyle = "solid")
+axes[3].plot(IVFADCGP_T / IVFADCGP_thread, IVFADCGP_Recall1, label = "IVFADCGP", color = 'orange', marker = '*', linestyle = "dashed")
+axes[3].plot(FaissPLE_T / FaissPLE_thread, FaissPLE_Recall1, label = "FaissPLE", color = 'limegreen', marker = '.', linestyle = 'dashdot')
+axes[3].plot(Faiss_T / Faiss_thread, Faiss_Recall1, label = 'Faiss', color = 'purple', marker = 'v', linestyle = 'dotted')
 
 plt.xlabel('Latency / ms', fontsize = axisfont, fontweight = axisweight)
 plt.ylabel('Recall1@1', fontsize = axisfont, fontweight = axisweight)
@@ -144,7 +149,8 @@ plt.ylim(ystart, yend)
 lines, labels = fig.axes[-1].get_legend_handles_labels()
 
 fig.legend(lines, labels, loc='upper center', ncol = 4, prop=dict(weight=legendweight, size = legendfont))
-plt.show()
+plt.savefig("/data00/yujian/ANNS/faiss_billion/BillionScaleSearch/Visualization/Latency.pdf")
+#plt.show()
 
 
 

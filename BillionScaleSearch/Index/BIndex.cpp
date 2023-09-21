@@ -241,7 +241,7 @@ uint32_t BIndex::LearnCentroidsINI(
         std::string Batch_ID_path = Path_folder + "BaseID_" +  std::to_string(batch_idx + 1) + "_" + std::to_string(Assignment_num_batch) + ".ivecs";
         if (exists(Path_ID_seq) || exists(Batch_ID_path)){continue;}
 
-        std::cout << "Assigning the " << Assignment_indice + batch_idx + 1 << " / " << Assignment_num_batch << " batch of the dataset and save ID to" << Batch_ID_path << " Time consumption: " << Trecorder.get_time_usage() << " s\n";
+        std::cout << "Assigning the " << Assignment_indice + batch_idx + 1 << " / " << Assignment_num_batch << " batch of the dataset and save ID to" << Batch_ID_path << " Time consumption: " << Trecorder.getTimeConsumption() << " s\n";
         std::vector<uint32_t> Base_batch_id(Assignment_batch_size, 0);
         std::vector<float> Base_batch(Assignment_batch_size * Dimension);
 

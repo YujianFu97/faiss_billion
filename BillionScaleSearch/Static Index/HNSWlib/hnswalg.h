@@ -91,8 +91,8 @@ namespace hnswlib {
 
         std::priority_queue<std::pair<float, idx_t >> searchKnn(const float *query_data, size_t k);
 
-        void SaveInfo(const std::string &location);
-        void SaveEdges(const std::string &location);
+        void SaveInfo(const std::string &location, bool visualize);
+        void SaveEdges(const std::string &location, bool visualize);
 
         void LoadInfo(const std::string &location);
         void LoadData(const std::string &location);

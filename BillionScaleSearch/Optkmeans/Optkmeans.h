@@ -4,18 +4,13 @@
 #include <stdlib.h>
 #include <vector>
 #include <algorithm>
-#include "../../faiss/utils/distances.h"
-#include "../../faiss/utils/utils.h"
-#include "../../faiss/utils/random.h"
 #include"../utils/utils.h"
-#include  "../../faiss/Clustering.h"
-#include "../hnswlib/hnswalg.h"
-#include <omp.h>
+
+
 
 // Need to set this correctly when running million/billion scale datasets
 //typedef float DataType;
-typedef uint8_t DataType;
-
+typedef float DataType;
 
 
 /**
@@ -51,7 +46,6 @@ float hierarkmeans(float * trainset, size_t dimension, size_t trainsize, size_t 
                 size_t iterations = 30, bool keeptrainlabels =false, uint32_t * trainlabels = nullptr, 
                 float * traindists = nullptr);
 
-
 void GraphSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, size_t nq, size_t nb, size_t k, size_t Dimension, size_t M = 32, size_t EfCons = 40);
 
 void BruteSearch(uint32_t * ID, float * Dist, float * Query, float * BaseSet, size_t nq, size_t nb, size_t k, size_t Dimension);
@@ -63,9 +57,5 @@ std::map<std::pair<uint32_t, uint32_t>, std::tuple<size_t, float, size_t>> neigh
             float lambda = 50, size_t OptSize = 10, 
             bool UseGraph = false, size_t iterations = 30,
             uint32_t * trainlabels = nullptr, float * traindists = nullptr);
-
-
-
-
 
 #endif

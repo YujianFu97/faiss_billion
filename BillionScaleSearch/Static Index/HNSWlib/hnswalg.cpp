@@ -233,7 +233,7 @@ std::priority_queue<std::pair<float, idx_t>> HierarchicalNSW::searchKnn(const fl
     return topResults;
 };
 
-void HierarchicalNSW::SaveInfo(const std::string &location)
+void HierarchicalNSW::SaveInfo(const std::string &location, bool visualize = true)
 {
     std::cout << "Saving info to " << location << std::endl;
     std::ofstream output(location, std::ios::binary);
@@ -249,7 +249,7 @@ void HierarchicalNSW::SaveInfo(const std::string &location)
 }
 
 
-void HierarchicalNSW::SaveEdges(const std::string &location)
+void HierarchicalNSW::SaveEdges(const std::string &location, bool visualize = true)
 {
     std::cout << "Saving edges to " << location << std::endl;
     std::ofstream output(location, std::ios::binary);

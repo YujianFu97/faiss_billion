@@ -8,8 +8,8 @@ const bool UseOPQ = false;
 const bool UsePS = false;
 
 //For index construction
-size_t CTrainSize = nt;     // Number of vectors used for initialization centroid training
-size_t nc = 1000;
+const size_t CTrainSize = nt;     // Number of vectors used for initialization centroid training
+const size_t nc = 1000;
 size_t PQTrainSize = 20000;
 size_t M_PQ =32;
 size_t CodeBits = 8;
@@ -21,7 +21,7 @@ const size_t NumRecall = 2;
 size_t RecallK[NumRecall] = {1, 5};
 const size_t NumPara = 10;
 size_t MaxItem[NumPara] =           {10000, 1000, 5000, 8000, 10000, 15000, 20000, 25000, 30000, 35000};
-size_t EfSearch[NumPara] =          {100, 50, 50, 50, 50, 50, 50, 50, 50, 50}; 
+size_t EfSearch[NumPara] =          {10, 50, 50, 50, 50, 50, 50, 50, 50, 50}; 
 size_t EfNList[NumPara] =           {200, 50, 100, 500, 600, 1000, 1300, 1500, 2000, 2300};
 //This is the number of checked vectors but not update 
 //size_t MaxNoUpdate[NumPara] = {5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000};
@@ -55,9 +55,10 @@ std::string NCString_PS = std::to_string(IniM);
 std::string NCString    = std::to_string(nc);
 
 // For NClist
-size_t SearchK = 10; // The number of NN in search, use SearchK > TargetK
 const bool UseQuantize = false; // UseQuantize = True is not implemented yet
 size_t QuantBatchSize = 20; 
+
+size_t SearchK = 10; // The number of NN in search, use SearchK > TargetK
 size_t NLTargetK = 10; 
 size_t NeighborNum = 20; // The number of neighbor clusters to be computed
 size_t Assign_num_batch = 2; // Assignment batch num
@@ -65,19 +66,19 @@ size_t Graph_num_batch = 2;  // Batch num of
 size_t Assign_batch_size = nb / Assign_num_batch;
 size_t ClusterDistNum = 1000; //Distance between vectors and centroids, used in search task
 //std::string NNDatasetName = "Train"; // Choose one from "Train" or "Base"
-std::string NNDatasetName = "Base";
+std::string NNDatasetName = "Train";
 
 // File Path
 const std::string PathNLFolder = PathFolder + Dataset + "/" + "NLFiles/";
-std::string PathDatasetNN = PathNLFolder + NNDatasetName + "NN_" + std::to_string(nc) + "_" + std::to_string(SearchK);
+std::string PathDatasetNN = PathNLFolder + NNDatasetName + "NN_" + std::to_string(nt) + "_" + std::to_string(SearchK);
 std::string PathCentroidNLNorm = PathNLFolder + "CentroidNeighborNorm_" + std::to_string(nc);
 std::string PathBaseNeighborID = PathNLFolder + "BaseNeighborID_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
 std::string PathBaseNeighborDist = PathNLFolder + "BaseNeighborDist_" + std::to_string(nc) + "_" + std::to_string(NeighborNum);
 std::string PathBaseAssignComp = PathNLFolder + "BaseAssignmentComp_" + std::to_string(nc);
-std::string PathSubGraphFolder = PathNLFolder + "SubGraphIndexes/";
+std::string PathSubGraphFolder = PathNLFolder + "GraphIndex/";
 std::string PathCenGraphInfo = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".info";
 std::string PathCenGraphEdge = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".edge";
-
+std::string PathCenGraphIndex = PathNLFolder + "CenGraph_" + std::to_string(nc) + "_" + std::to_string(M) + "_" + std::to_string(EfConstruction) + ".index";
 
 // Data Path 
 const std::string PathLearn =     PathFolder  + Dataset + "/" + Dataset +"_learn.fvecs";

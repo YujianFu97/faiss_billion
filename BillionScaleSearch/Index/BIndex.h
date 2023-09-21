@@ -7,7 +7,7 @@
 #include "../../faiss/VectorTransform.h"
 #include "../../faiss/index_io.h"
 #include "../../faiss/IndexFlat.h"
-#include "../complib/include/codecfactory.h"
+//#include "../complib/include/codecfactory.h"
 #include "../NCSearch/NCSearch.h"
 
 
