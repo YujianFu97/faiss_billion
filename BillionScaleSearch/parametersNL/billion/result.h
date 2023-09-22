@@ -11,8 +11,8 @@ const size_t EfSearch[NumPara] =          {190, 200, 210, 220, 250, 300, 350, 40
 const std::string SearchMode = "NonParallel";
 
 // For kmeans clustering
-const size_t nc = 500000;
-const size_t nt_c = 10000000 ;
+const size_t nc = 1000000;
+const size_t nt_c = 15000000;
 
 //For HNSW graph
 const size_t M_kmeans = 32;
