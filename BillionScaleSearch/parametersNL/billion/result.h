@@ -1,6 +1,5 @@
 #include "./DEEP1B.h"
 
-
 // For search
 const size_t NumRecall = 1;
 const size_t RecallK[NumRecall] = {1};
@@ -12,7 +11,7 @@ const std::string SearchMode = "NonParallel";
 
 // For kmeans clustering
 const size_t nc = 1000000;
-const size_t nt_c = 20000000 ;
+const size_t nt_c = 20000000;
 
 //For HNSW graph
 const size_t M_kmeans = 32;

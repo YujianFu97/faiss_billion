@@ -906,10 +906,10 @@ int main(int argc, char* argv[]) {
     std::cout << "rerunCentroids: " << rerunCentroids << "\n"  << "rerunComputeNN: " << rerunComputeNN << "\n" << "rerunComputeNL: " << rerunComputeNL << "\n";
 
     PrepareFolder(PathNLFolder.c_str());
-    computeCentroids();
-    computeCenHNSWGraph();
-    computeDatasetNeighbor();
-    exit(0);
+    //computeCentroids();
+    //computeCenHNSWGraph();
+    //computeDatasetNeighbor();
+    //exit(0);
     computeNN();
     testNNGraphQuality();
     exit(0);
